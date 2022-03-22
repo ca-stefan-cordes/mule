@@ -204,7 +204,7 @@ public abstract class ComponentMessageProcessor<T extends ComponentModel> extend
   static final String INVALID_TARGET_MESSAGE =
       "Root component '%s' defines an invalid usage of operation '%s' which uses %s as %s";
   private static final Logger LOGGER = getLogger(ComponentMessageProcessor.class);
-  private static final ExtensionTransactionFactory TRANSACTION_FACTORY = new ExtensionTransactionFactory();
+  private ExtensionTransactionFactory transactionFactory;
   protected final ExtensionModel extensionModel;
   protected final ResolverSet resolverSet;
   protected final String target;
@@ -586,36 +586,38 @@ public abstract class ComponentMessageProcessor<T extends ComponentModel> extend
 
   @Override
   protected void doInitialise() throws InitialisationException {
-    if (!initialised) {
-      initRetryPolicyResolver();
-      try {
-        transactionConfig = buildTransactionConfig();
-      } catch (MuleException e) {
-        throw new InitialisationException(createStaticMessage("Could not resolve transactional configuration"), e, this);
-      }
-      returnDelegate = createReturnDelegate();
-      valueReturnDelegate = getValueReturnDelegate();
-      initialiseIfNeeded(resolverSet, muleContext);
-      componentExecutor = createComponentExecutor();
-      executionMediator = createExecutionMediator();
-      initialiseIfNeeded(componentExecutor, true, muleContext);
-
-      ComponentLocation componentLocation = getLocation();
-      if (componentLocation != null) {
-        processorPath = componentLocation.getLocation();
-      }
-
-      resolvedProcessorRepresentation = getRepresentation();
-
-      if (nestedChain != null) {
-        LOGGER.debug("Initializing nested chain ({}) of component '{}'...", nestedChain, processorPath);
-        initialiseIfNeeded(nestedChain, muleContext);
-      }
-
-      initProcessingStrategy();
-
-      initialised = true;
+    if (initialised) {
+      return;
     }
+    transactionFactory = new ExtensionTransactionFactory(profilingService);
+    initRetryPolicyResolver();
+    try {
+      transactionConfig = buildTransactionConfig();
+    } catch (MuleException e) {
+      throw new InitialisationException(createStaticMessage("Could not resolve transactional configuration"), e, this);
+    }
+    returnDelegate = createReturnDelegate();
+    valueReturnDelegate = getValueReturnDelegate();
+    initialiseIfNeeded(resolverSet, muleContext);
+    componentExecutor = createComponentExecutor();
+    executionMediator = createExecutionMediator();
+    initialiseIfNeeded(componentExecutor, true, muleContext);
+
+    ComponentLocation componentLocation = getLocation();
+    if (componentLocation != null) {
+      processorPath = componentLocation.getLocation();
+    }
+
+    resolvedProcessorRepresentation = getRepresentation();
+
+    if (nestedChain != null) {
+      LOGGER.debug("Initializing nested chain ({}) of component '{}'...", nestedChain, processorPath);
+      initialiseIfNeeded(nestedChain, muleContext);
+    }
+
+    initProcessingStrategy();
+
+    initialised = true;
   }
 
   private void initProcessingStrategy() throws InitialisationException {
@@ -1265,16 +1267,15 @@ public abstract class ComponentMessageProcessor<T extends ComponentModel> extend
   }
 
   private Optional<TransactionConfig> buildTransactionConfig() throws MuleException {
-    if (supportsTransactions(componentModel)) {
-      MuleTransactionConfig transactionConfig = new MuleTransactionConfig();
-      transactionConfig.setAction(toActionCode(getTransactionalAction()));
-      transactionConfig.setMuleContext(muleContext);
-      transactionConfig.setFactory(TRANSACTION_FACTORY);
-
-      return of(transactionConfig);
+    if (!supportsTransactions(componentModel)) {
+      return empty();
     }
+    MuleTransactionConfig transactionConfig = new MuleTransactionConfig();
+    transactionConfig.setAction(toActionCode(getTransactionalAction()));
+    transactionConfig.setMuleContext(muleContext);
+    transactionConfig.setFactory(transactionFactory);
 
-    return empty();
+    return of(transactionConfig);
   }
 
   private OperationTransactionalAction getTransactionalAction() throws MuleException {

@@ -8,8 +8,15 @@ package org.mule.runtime.module.extension.internal.runtime.transaction;
 
 import static java.lang.String.format;
 import static java.util.Optional.empty;
+import static org.mule.runtime.api.profiling.type.RuntimeProfilingEventTypes.TX_COMMIT;
+import static org.mule.runtime.api.profiling.type.RuntimeProfilingEventTypes.TX_ROLLBACK;
 import static org.mule.runtime.core.api.config.i18n.CoreMessages.transactionCanOnlyBindToResources;
+import static org.mule.runtime.core.api.transaction.TransactionUtils.profileTransactionAction;
+
 import org.mule.runtime.api.notification.NotificationDispatcher;
+import org.mule.runtime.api.profiling.ProfilingDataProducer;
+import org.mule.runtime.api.profiling.ProfilingService;
+import org.mule.runtime.api.profiling.type.context.TransactionProfilingEventContext;
 import org.mule.runtime.api.tx.TransactionException;
 import org.mule.runtime.core.privileged.transaction.AbstractSingleResourceTransaction;
 import org.mule.runtime.core.privileged.transaction.xa.IllegalTransactionStateException;
@@ -25,9 +32,14 @@ import java.util.Optional;
 public class ExtensionTransaction extends AbstractSingleResourceTransaction {
 
   private Optional<ExtensionTransactionalResource> boundResource = empty();
+  private final ProfilingDataProducer<TransactionProfilingEventContext, Object> commitProducer;
+  private final ProfilingDataProducer<TransactionProfilingEventContext, Object> rollbackProducer;
 
-  public ExtensionTransaction(String applicationName, NotificationDispatcher notificationFirer) {
+  public ExtensionTransaction(String applicationName, NotificationDispatcher notificationFirer,
+                              ProfilingService profilingService) {
     super(applicationName, notificationFirer);
+    commitProducer = profilingService.getProfilingDataProducer(TX_COMMIT);
+    rollbackProducer = profilingService.getProfilingDataProducer(TX_ROLLBACK);
   }
 
   /**
@@ -70,6 +82,7 @@ public class ExtensionTransaction extends AbstractSingleResourceTransaction {
   protected void doCommit() throws TransactionException {
     if (boundResource.isPresent()) {
       try {
+        profileTransactionAction(commitProducer, TX_COMMIT, getComponentLocation().get());
         boundResource.get().commit();
       } catch (Exception e) {
         throw new TransactionException(e);
@@ -84,6 +97,7 @@ public class ExtensionTransaction extends AbstractSingleResourceTransaction {
   protected void doRollback() throws TransactionException {
     if (boundResource.isPresent()) {
       try {
+        profileTransactionAction(rollbackProducer, TX_ROLLBACK, getComponentLocation().get());
         boundResource.get().rollback();
       } catch (Exception e) {
         throw new TransactionException(e);

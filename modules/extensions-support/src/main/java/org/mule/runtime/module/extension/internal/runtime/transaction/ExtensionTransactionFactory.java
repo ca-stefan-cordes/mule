@@ -7,14 +7,17 @@
 package org.mule.runtime.module.extension.internal.runtime.transaction;
 
 import org.mule.runtime.api.notification.NotificationDispatcher;
+import org.mule.runtime.api.profiling.ProfilingService;
 import org.mule.runtime.api.tx.TransactionException;
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.SingleResourceTransactionFactoryManager;
 import org.mule.runtime.core.api.transaction.Transaction;
 import org.mule.runtime.core.api.transaction.TransactionFactory;
 import org.mule.runtime.core.internal.context.MuleContextWithRegistry;
+import org.mule.runtime.core.internal.profiling.CoreProfilingService;
 import org.mule.runtime.core.privileged.registry.RegistrationException;
 
+import javax.inject.Inject;
 import javax.transaction.TransactionManager;
 
 import static org.mule.runtime.core.api.config.i18n.CoreMessages.cannotStartTransaction;
@@ -25,6 +28,17 @@ import static org.mule.runtime.core.api.config.i18n.CoreMessages.cannotStartTran
  * @since 4.0
  */
 public class ExtensionTransactionFactory implements TransactionFactory {
+
+  @Inject
+  private CoreProfilingService profilingService;
+
+  public ExtensionTransactionFactory() {
+    this(null);
+  }
+
+  public ExtensionTransactionFactory(ProfilingService profilingService) {
+    //this.profilingService = profilingService;
+  }
 
   @Override
   public Transaction beginTransaction(MuleContext muleContext) throws TransactionException {
@@ -46,7 +60,7 @@ public class ExtensionTransactionFactory implements TransactionFactory {
                                       SingleResourceTransactionFactoryManager transactionFactoryManager,
                                       TransactionManager transactionManager)
       throws TransactionException {
-    Transaction transaction = new ExtensionTransaction(applicationName, notificationFirer);
+    Transaction transaction = new ExtensionTransaction(applicationName, notificationFirer, profilingService);
     transaction.begin();
 
     return transaction;
