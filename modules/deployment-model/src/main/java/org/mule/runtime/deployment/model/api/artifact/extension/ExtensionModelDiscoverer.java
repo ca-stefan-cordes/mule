@@ -34,7 +34,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
@@ -103,6 +102,7 @@ public class ExtensionModelDiscoverer {
    * @return {@link Set} of {@link Pair} carrying the {@link ArtifactPluginDescriptor} and it's corresponding
    *         {@link ExtensionModel}.
    */
+  @Deprecated
   public Set<Pair<ArtifactPluginDescriptor, ExtensionModel>> discoverPluginsExtensionModels(ExtensionDiscoveryRequest discoveryRequest) {
     final Set<Pair<ArtifactPluginDescriptor, ExtensionModel>> descriptorsWithExtensions = synchronizedSet(new HashSet<>());
 
@@ -163,10 +163,9 @@ public class ExtensionModelDiscoverer {
                                                               final Set<Pair<ArtifactPluginDescriptor, ExtensionModel>> descriptorsWithExtensions,
                                                               Pair<ArtifactPluginDescriptor, ArtifactClassLoader> artifactPlugin) {
     final ArtifactPluginDescriptor artifactPluginDescriptor = artifactPlugin.getFirst();
-    Optional<LoaderDescriber> loaderDescriber = artifactPluginDescriptor.getExtensionModelDescriptorProperty();
     ClassLoader artifactClassloader = artifactPlugin.getSecond().getClassLoader();
     String artifactName = artifactPluginDescriptor.getName();
-    ExtensionModel extension = loaderDescriber
+    ExtensionModel extension = artifactPluginDescriptor.getExtensionModelDescriptorProperty()
         .map(describer -> discoverExtensionThroughJsonDescriber(discoveryRequest.getLoaderRepository(), describer,
                                                                 extensions, artifactClassloader,
                                                                 artifactName,

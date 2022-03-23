@@ -22,7 +22,8 @@ import java.util.function.Supplier;
  * @since 4.0, moved to api in 4.5
  */
 @FunctionalInterface
-public interface ExtensionModelLoaderRepository {
+public interface ExtensionModelLoaderRepository
+    extends org.mule.runtime.module.artifact.activation.api.extension.ExtensionModelLoaderRepository {
 
   /**
    * @return a repository that manages the lifecycle of the {@link ExtensionModelLoader} available in the
@@ -51,6 +52,7 @@ public interface ExtensionModelLoaderRepository {
    * @param loaderDescriber {@link LoaderDescriber} describes the loader needed.
    * @return {@link ExtensionModelLoader} for the given {@link LoaderDescriber} or {@link Optional#empty()}.
    */
+  @Override
   Optional<ExtensionModelLoader> getExtensionModelLoader(LoaderDescriber loaderDescriber);
 
 }

@@ -8,7 +8,6 @@
 package org.mule.runtime.module.deployment.impl.internal.policy;
 
 import static java.util.Collections.emptySet;
-import static java.util.stream.Collectors.toSet;
 
 import org.mule.runtime.api.meta.model.ExtensionModel;
 import org.mule.runtime.api.util.Pair;
@@ -17,6 +16,8 @@ import org.mule.runtime.core.api.extension.ExtensionManager;
 import org.mule.runtime.deployment.model.api.artifact.extension.ExtensionModelDiscoverer;
 import org.mule.runtime.deployment.model.api.artifact.extension.ExtensionModelLoaderRepository;
 import org.mule.runtime.deployment.model.api.plugin.ArtifactPlugin;
+import org.mule.runtime.module.artifact.activation.internal.extension.ClassIntrospectionExtensionModelGenerator;
+import org.mule.runtime.module.artifact.activation.internal.extension.DefaultExtensionModelDiscoverer;
 import org.mule.runtime.module.artifact.api.classloader.ArtifactClassLoader;
 import org.mule.runtime.module.artifact.api.descriptor.ArtifactPluginDescriptor;
 import org.mule.runtime.module.extension.api.manager.ExtensionManagerFactory;
@@ -32,6 +33,7 @@ import java.util.Set;
 public class ArtifactExtensionManagerFactory implements ExtensionManagerFactory {
 
   private final ExtensionModelLoaderRepository extensionModelLoaderRepository;
+  private final List<ArtifactPluginDescriptor> artifactPluginDescriptors;
   private final List<Pair<ArtifactPluginDescriptor, ArtifactClassLoader>> artifactPlugins;
   private final ExtensionManagerFactory extensionManagerFactory;
   private final ExtensionModelDiscoverer extensionModelDiscoverer;
@@ -46,6 +48,9 @@ public class ArtifactExtensionManagerFactory implements ExtensionManagerFactory 
   public ArtifactExtensionManagerFactory(List<ArtifactPlugin> artifactPlugins,
                                          ExtensionModelLoaderRepository extensionModelLoaderRepository,
                                          ExtensionManagerFactory extensionManagerFactory) {
+    this.artifactPluginDescriptors = new ArrayList<>();
+    artifactPlugins.forEach(artifactPlugin -> this.artifactPluginDescriptors
+        .add(artifactPlugin.getDescriptor()));
     this.artifactPlugins = new ArrayList<>();
     artifactPlugins.forEach(artifactPlugin -> this.artifactPlugins
         .add(new Pair<>(artifactPlugin.getDescriptor(), artifactPlugin.getArtifactClassLoader())));
@@ -67,9 +72,23 @@ public class ArtifactExtensionManagerFactory implements ExtensionManagerFactory 
     final Set<ExtensionModel> extensions = new HashSet<>();
     extensionModelDiscoverer.discoverRuntimeExtensionModels()
         .forEach(extensionManager::registerExtension);
-    extensions.addAll(extensionModelDiscoverer
-        .discoverPluginsExtensionModels(extensionModelLoaderRepository, artifactPlugins, parentArtifactExtensions)
-        .stream().map(Pair::getSecond).collect(toSet()));
+
+    extensions.addAll(new DefaultExtensionModelDiscoverer(new ClassIntrospectionExtensionModelGenerator(ap -> artifactPlugins
+        .stream()
+        .filter(artifactPluginPair -> artifactPluginPair.getFirst().equals(ap))
+        .findAny()
+        .get()
+        .getSecond()))
+            .discoverPluginsExtensionModels(org.mule.runtime.module.artifact.activation.api.extension.ExtensionDiscoveryRequest
+                .builder()
+                .setLoaderRepository(extensionModelLoaderRepository)
+                .setArtifactPlugins(artifactPluginDescriptors)
+                .setParentArtifactExtensions(parentArtifactExtensions)
+                .build()));
+    // TODO
+    // extensions.addAll(extensionModelDiscoverer
+    // .discoverPluginsExtensionModels(extensionModelLoaderRepository, artifactPlugins, parentArtifactExtensions)
+    // .stream().map(Pair::getSecond).collect(toSet()));
     extensions.forEach(extensionManager::registerExtension);
     return extensionManager;
   }

@@ -91,9 +91,9 @@ import org.slf4j.Logger;
  * Both parameter and property could be simple literals or expressions that will be evaluated before passing the new
  * {@link CoreEvent} to the child processors.
  * <p>
- * Taking the following sample where the current event is processed using {@link ModuleOperationProcessorChain#apply(Publisher)},
- * has a variable under "person" with a value of "stranger!", the result of executing the above processor will be "howdy
- * stranger!":
+ * Taking the following sample where the current event is processed using
+ * {@link ModuleOperationProcessorChain#obtainExtensionModel(Publisher)}, has a variable under "person" with a value of
+ * "stranger!", the result of executing the above processor will be "howdy stranger!":
  *
  * <pre>
  *  <module-operation-chain moduleName="a-module-name" moduleOperation="an-operation-name">
