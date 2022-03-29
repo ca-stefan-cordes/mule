@@ -35,7 +35,6 @@ import java.util.function.Function;
 public class ClassIntrospectionExtensionModelGenerator implements ExtensionModelGenerator {
 
   // private ArtifactClassLoaderResolver artifactClassLoaderResolver;
-  private ExtensionDiscoveryRequest discoveryRequest;
 
   // private MuleDeployableArtifactClassLoader ownerArtifactClassLoader;
   // private Function<BundleDescriptor, Optional<ArtifactPluginDescriptor>> pluginDescriptorResolver;
@@ -48,7 +47,9 @@ public class ClassIntrospectionExtensionModelGenerator implements ExtensionModel
   }
 
   // @Override
-  public ExtensionModel obtainExtensionModel(ArtifactPluginDescriptor artifactPluginDescriptor,
+  @Override
+  public ExtensionModel obtainExtensionModel(ExtensionDiscoveryRequest discoveryRequest,
+                                             ArtifactPluginDescriptor artifactPluginDescriptor,
                                              Set<ExtensionModel> dependencies) {
     return artifactPluginDescriptor.getExtensionModelDescriptorProperty()
         .map(describer -> discoverExtensionThroughJsonDescriber(discoveryRequest.getLoaderRepository(),

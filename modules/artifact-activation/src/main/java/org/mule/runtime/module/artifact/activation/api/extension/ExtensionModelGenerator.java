@@ -13,7 +13,8 @@ import java.util.Set;
 
 public interface ExtensionModelGenerator {
 
-  ExtensionModel obtainExtensionModel(ArtifactPluginDescriptor artifactPluginDescriptor,
+  ExtensionModel obtainExtensionModel(ExtensionDiscoveryRequest discoveryRequest,
+                                      ArtifactPluginDescriptor artifactPluginDescriptor,
                                       Set<ExtensionModel> dependencies);
 
 }

@@ -115,10 +115,13 @@ public class DefaultExtensionModelDiscoverer implements ExtensionModelDiscoverer
     dependencies.addAll(extensions);
     dependencies.addAll(discoveryRequest.getParentArtifactExtensions());
     if (!dependencies.contains(MuleExtensionModelProvider.getExtensionModel())) {
-      dependencies = ImmutableSet.<ExtensionModel>builder().addAll(extensions).addAll(discoverRuntimeExtensionModels()).build();
+      dependencies = ImmutableSet.<ExtensionModel>builder()
+          .addAll(extensions)
+          .addAll(discoverRuntimeExtensionModels())
+          .build();
     }
 
-    ExtensionModel extension = extensionModelLoader.obtainExtensionModel(artifactPlugin, dependencies);
+    ExtensionModel extension = extensionModelLoader.obtainExtensionModel(discoveryRequest, artifactPlugin, dependencies);
     if (extension != null) {
       extensions.add(extension);
     }
