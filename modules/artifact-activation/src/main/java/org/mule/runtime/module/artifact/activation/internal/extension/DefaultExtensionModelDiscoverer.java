@@ -72,7 +72,9 @@ public class DefaultExtensionModelDiscoverer implements ExtensionModelDiscoverer
     discoveryRequest.getArtifactPlugins()
         .stream()
         .forEach(apd -> apd.getClassLoaderModel().getDependencies().stream()
-            .filter(dep -> dep.getDescriptor().getClassifier().map(MULE_PLUGIN_CLASSIFIER::equals).orElse(false))
+            .filter(dep -> dep.getDescriptor().getClassifier().map(MULE_PLUGIN_CLASSIFIER::equals).orElse(false)
+                // account for dependencies from parent artifact
+                && depsGraph.containsVertex(dep.getDescriptor()))
             .forEach(dep -> depsGraph.addEdge(apd.getBundleDescriptor(), dep.getDescriptor(), new DefaultEdge())));
     TransitiveReduction.INSTANCE.reduce(depsGraph);
 

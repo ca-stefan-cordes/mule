@@ -73,18 +73,21 @@ public class ArtifactExtensionManagerFactory implements ExtensionManagerFactory 
     extensionModelDiscoverer.discoverRuntimeExtensionModels()
         .forEach(extensionManager::registerExtension);
 
-    extensions.addAll(new DefaultExtensionModelDiscoverer(new ClassIntrospectionExtensionModelGenerator(ap -> artifactPlugins
-        .stream()
-        .filter(artifactPluginPair -> artifactPluginPair.getFirst().equals(ap))
-        .findAny()
-        .get()
-        .getSecond()))
-            .discoverPluginsExtensionModels(org.mule.runtime.module.artifact.activation.api.extension.ExtensionDiscoveryRequest
-                .builder()
-                .setLoaderRepository(extensionModelLoaderRepository)
-                .setArtifactPlugins(artifactPluginDescriptors)
-                .setParentArtifactExtensions(parentArtifactExtensions)
-                .build()));
+    ClassIntrospectionExtensionModelGenerator extensionModelGenerator =
+        new ClassIntrospectionExtensionModelGenerator(ap -> artifactPlugins
+            .stream()
+            .filter(artifactPluginPair -> artifactPluginPair.getFirst().equals(ap))
+            .findAny()
+            .get()
+            .getSecond());
+
+    extensions.addAll(new DefaultExtensionModelDiscoverer(extensionModelGenerator)
+        .discoverPluginsExtensionModels(org.mule.runtime.module.artifact.activation.api.extension.ExtensionDiscoveryRequest
+            .builder()
+            .setLoaderRepository(extensionModelLoaderRepository)
+            .setArtifactPlugins(artifactPluginDescriptors)
+            .setParentArtifactExtensions(parentArtifactExtensions)
+            .build()));
     // TODO
     // extensions.addAll(extensionModelDiscoverer
     // .discoverPluginsExtensionModels(extensionModelLoaderRepository, artifactPlugins, parentArtifactExtensions)
