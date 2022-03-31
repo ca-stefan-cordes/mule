@@ -16,17 +16,26 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
+ * Provides a way to discover {@link ExtensionModel}s from the Mule Runtime or from {@code mule-plugins} in the context of a
+ * deployable artifact.
  * 
  * @since 4.5
  */
 public interface ExtensionModelDiscoverer {
 
+  /**
+   * Creates a {@link ExtensionModelDiscoverer} that will rely on class introspection for generating the extension models for
+   * plugins developed with the Java SDK.
+   * 
+   * @param classLoaderFactory a way to obtain the classloader for a given plugin.
+   * @return a newly created {@link ExtensionModelDiscoverer}.
+   */
   public static ExtensionModelDiscoverer defaultExtensionModelDiscoverer(Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory) {
     return new DefaultExtensionModelDiscoverer(new ClassIntrospectionExtensionModelGenerator(classLoaderFactory));
   }
 
   /**
-   * Discover the extension models provided by the runtime.
+   * Discover the extension models provided by the Mule Runtime.
    *
    * @return {@link Set} of the runtime provided {@link ExtensionModel}s.
    */
