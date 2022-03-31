@@ -47,7 +47,9 @@ import org.slf4j.Logger;
  * Discover the {@link ExtensionModel} based on the {@link ExtensionModelLoader} type.
  *
  * @since 4.0
+ * @deprecated Use {@link org.mule.runtime.module.artifact.activation.api.extension.ExtensionModelDiscoverer} instead.
  */
+@Deprecated
 public class ExtensionModelDiscoverer {
 
   private static final Logger LOGGER = getLogger(ExtensionModelDiscoverer.class);

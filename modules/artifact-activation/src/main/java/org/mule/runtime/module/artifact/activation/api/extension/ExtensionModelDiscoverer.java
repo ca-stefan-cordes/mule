@@ -7,11 +7,23 @@
 package org.mule.runtime.module.artifact.activation.api.extension;
 
 import org.mule.runtime.api.meta.model.ExtensionModel;
+import org.mule.runtime.module.artifact.activation.internal.extension.ClassIntrospectionExtensionModelGenerator;
+import org.mule.runtime.module.artifact.activation.internal.extension.DefaultExtensionModelDiscoverer;
+import org.mule.runtime.module.artifact.api.classloader.ArtifactClassLoader;
+import org.mule.runtime.module.artifact.api.descriptor.ArtifactPluginDescriptor;
 
 import java.util.Set;
+import java.util.function.Function;
 
-// TODO review name: Discoverer?
+/**
+ * 
+ * @since 4.5
+ */
 public interface ExtensionModelDiscoverer {
+
+  public static ExtensionModelDiscoverer defaultExtensionModelDiscoverer(Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory) {
+    return new DefaultExtensionModelDiscoverer(new ClassIntrospectionExtensionModelGenerator(classLoaderFactory));
+  }
 
   /**
    * Discover the extension models provided by the runtime.

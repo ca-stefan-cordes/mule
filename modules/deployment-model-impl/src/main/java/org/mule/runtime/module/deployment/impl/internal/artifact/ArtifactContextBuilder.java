@@ -6,9 +6,6 @@
  */
 package org.mule.runtime.module.deployment.impl.internal.artifact;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Optional.empty;
 import static org.mule.runtime.api.util.Preconditions.checkArgument;
 import static org.mule.runtime.api.util.Preconditions.checkState;
 import static org.mule.runtime.core.api.config.MuleProperties.APP_HOME_DIRECTORY_PROPERTY;
@@ -24,6 +21,10 @@ import static org.mule.runtime.core.api.util.ClassUtils.withContextClassLoader;
 import static org.mule.runtime.core.api.util.UUID.getUUID;
 import static org.mule.runtime.module.deployment.impl.internal.artifact.ArtifactFactoryUtils.getMuleContext;
 import static org.mule.runtime.module.deployment.impl.internal.artifact.ArtifactFactoryUtils.isConfigLess;
+
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
+import static java.util.Optional.empty;
 
 import org.mule.runtime.api.component.location.Location;
 import org.mule.runtime.api.config.custom.ServiceConfigurator;
@@ -316,7 +317,9 @@ public class ArtifactContextBuilder {
    *
    * @param extensionModelLoaderRepository {@link ExtensionModelLoaderRepository} with the available extension loaders. Non null.
    * @return the builder
+   * @deprecated this is calculated internally now
    */
+  @Deprecated
   public ArtifactContextBuilder setExtensionModelLoaderRepository(ExtensionModelLoaderRepository extensionModelLoaderRepository) {
     checkArgument(extensionModelLoaderRepository != null, EXTENSION_MODEL_LOADER_REPOSITORY_CANNOT_BE_NULL);
     this.extensionModelLoaderRepository = extensionModelLoaderRepository;
@@ -426,11 +429,9 @@ public class ArtifactContextBuilder {
           MuleContext parentMuleContext = getMuleContext(parentArtifact).orElse(null);
           if (parentMuleContext == null || hasEmptyParentDomain) {
             extensionManagerFactory =
-                new ArtifactExtensionManagerFactory(artifactPlugins, extensionModelLoaderRepository,
-                                                    new DefaultExtensionManagerFactory());
+                new ArtifactExtensionManagerFactory(artifactPlugins, new DefaultExtensionManagerFactory());
           } else {
-            extensionManagerFactory = new CompositeArtifactExtensionManagerFactory(parentArtifact, extensionModelLoaderRepository,
-                                                                                   artifactPlugins,
+            extensionManagerFactory = new CompositeArtifactExtensionManagerFactory(parentArtifact, artifactPlugins,
                                                                                    new DefaultExtensionManagerFactory());
           }
 

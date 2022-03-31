@@ -8,7 +8,6 @@ package org.mule.runtime.module.artifact.activation.internal.extension;
 
 import org.mule.runtime.api.meta.model.ExtensionModel;
 import org.mule.runtime.module.artifact.activation.api.extension.ExtensionDiscoveryRequest;
-import org.mule.runtime.module.artifact.activation.api.extension.ExtensionModelLoaderRepository;
 import org.mule.runtime.module.artifact.api.descriptor.ArtifactPluginDescriptor;
 
 import java.util.List;
@@ -16,27 +15,19 @@ import java.util.Set;
 
 public class DefaultExtensionDiscoveryRequest implements ExtensionDiscoveryRequest {
 
-  private final ExtensionModelLoaderRepository loaderRepository;
   private final List<ArtifactPluginDescriptor> artifactPlugins;
   private final Set<ExtensionModel> parentArtifactExtensions;
   private final boolean parallelDiscovery;
   private final boolean enrichDescriptions;
 
-  public DefaultExtensionDiscoveryRequest(ExtensionModelLoaderRepository loaderRepository,
-                                          List<ArtifactPluginDescriptor> artifactPlugins,
+  public DefaultExtensionDiscoveryRequest(List<ArtifactPluginDescriptor> artifactPlugins,
                                           Set<ExtensionModel> parentArtifactExtensions,
                                           boolean parallelDiscovery,
                                           boolean enrichDescriptions) {
-    this.loaderRepository = loaderRepository;
     this.artifactPlugins = artifactPlugins;
     this.parentArtifactExtensions = parentArtifactExtensions;
     this.parallelDiscovery = parallelDiscovery;
     this.enrichDescriptions = enrichDescriptions;
-  }
-
-  @Override
-  public ExtensionModelLoaderRepository getLoaderRepository() {
-    return loaderRepository;
   }
 
   @Override

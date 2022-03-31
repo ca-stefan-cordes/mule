@@ -39,14 +39,8 @@ public class DefaultExtensionModelDiscoverer implements ExtensionModelDiscoverer
 
   private static final Logger LOGGER = getLogger(DefaultExtensionModelDiscoverer.class);
 
-  // private final Function<ArtifactPluginDescriptor, ExtensionModel> extensionModelLoader;
   private final ExtensionModelGenerator extensionModelLoader;
 
-  // public DefaultExtensionModelDiscoverer() {
-  // this.extensionModelLoader = new ClassIntrospectionLalala();
-  // }
-
-  // public DefaultExtensionModelDiscoverer(Function<ArtifactPluginDescriptor, ExtensionModel> extensionModelLoader) {
   public DefaultExtensionModelDiscoverer(ExtensionModelGenerator extensionModelLoader) {
     this.extensionModelLoader = extensionModelLoader;
   }
@@ -74,6 +68,8 @@ public class DefaultExtensionModelDiscoverer implements ExtensionModelDiscoverer
         .forEach(apd -> apd.getClassLoaderModel().getDependencies().stream()
             .filter(dep -> dep.getDescriptor().getClassifier().map(MULE_PLUGIN_CLASSIFIER::equals).orElse(false)
                 // account for dependencies from parent artifact
+                // TODO W-10927591 use the data form the extension model instead of assuming this (check with the failing test
+                // when removing this condition)
                 && depsGraph.containsVertex(dep.getDescriptor()))
             .forEach(dep -> depsGraph.addEdge(apd.getBundleDescriptor(), dep.getDescriptor(), new DefaultEdge())));
     TransitiveReduction.INSTANCE.reduce(depsGraph);

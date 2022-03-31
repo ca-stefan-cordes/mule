@@ -33,7 +33,6 @@ import org.mule.runtime.core.internal.context.MuleContextWithRegistry;
 import org.mule.runtime.deployment.model.api.application.Application;
 import org.mule.runtime.deployment.model.api.artifact.ArtifactConfigurationProcessor;
 import org.mule.runtime.deployment.model.api.artifact.ArtifactContext;
-import org.mule.runtime.deployment.model.api.artifact.extension.ExtensionModelLoaderRepository;
 import org.mule.runtime.deployment.model.api.policy.PolicyTemplate;
 import org.mule.runtime.deployment.model.api.policy.PolicyTemplateDescriptor;
 import org.mule.runtime.module.artifact.api.classloader.ClassLoaderRepository;
@@ -78,7 +77,6 @@ public class DefaultApplicationPolicyInstanceTestCase extends AbstractMuleTestCa
                                              parameterization,
                                              serviceRepository,
                                              mock(ClassLoaderRepository.class),
-                                             mock(ExtensionModelLoaderRepository.class),
                                              muleContextListener,
                                              mock(ArtifactConfigurationProcessor.class));
 

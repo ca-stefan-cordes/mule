@@ -13,12 +13,11 @@ import static org.mule.runtime.core.api.config.MuleProperties.OBJECT_EXTENSION_M
 import org.mule.runtime.core.api.MuleContext;
 import org.mule.runtime.core.api.extension.ExtensionManager;
 import org.mule.runtime.deployment.model.api.DeployableArtifact;
-import org.mule.runtime.deployment.model.api.artifact.extension.ExtensionModelLoaderRepository;
 import org.mule.runtime.deployment.model.api.plugin.ArtifactPlugin;
 import org.mule.runtime.deployment.model.api.policy.PolicyTemplate;
 import org.mule.runtime.module.deployment.impl.internal.policy.ArtifactExtensionManagerFactory;
-import org.mule.runtime.module.extension.internal.manager.CompositeArtifactExtensionManager;
 import org.mule.runtime.module.extension.api.manager.ExtensionManagerFactory;
+import org.mule.runtime.module.extension.internal.manager.CompositeArtifactExtensionManager;
 
 import java.util.List;
 
@@ -32,16 +31,14 @@ public class CompositeArtifactExtensionManagerFactory extends ArtifactExtensionM
   /**
    * Creates a new factory
    *
-   * @param parentArtifact                 application on which the policies are applied. Non null.
-   * @param extensionModelLoaderRepository {@link ExtensionModelLoaderRepository} with the available extension loaders. Non null.
-   * @param artifactPlugins                artifact plugins deployed inside the artifact. Non null.
-   * @param extensionManagerFactory        creates the {@link ExtensionManager} for the artifact. Non null
+   * @param parentArtifact          application on which the policies are applied. Non null.
+   * @param artifactPlugins         artifact plugins deployed inside the artifact. Non null.
+   * @param extensionManagerFactory creates the {@link ExtensionManager} for the artifact. Non null
    */
   public CompositeArtifactExtensionManagerFactory(DeployableArtifact parentArtifact,
-                                                  ExtensionModelLoaderRepository extensionModelLoaderRepository,
                                                   List<ArtifactPlugin> artifactPlugins,
                                                   ExtensionManagerFactory extensionManagerFactory) {
-    super(artifactPlugins, extensionModelLoaderRepository, extensionManagerFactory);
+    super(artifactPlugins, extensionManagerFactory);
 
     checkArgument(parentArtifact != null, "application cannot be null");
     this.parentArtifact = parentArtifact;

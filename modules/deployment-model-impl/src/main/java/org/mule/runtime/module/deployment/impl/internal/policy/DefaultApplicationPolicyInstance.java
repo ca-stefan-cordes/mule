@@ -43,7 +43,6 @@ import org.mule.runtime.core.internal.context.MuleContextWithRegistry;
 import org.mule.runtime.deployment.model.api.application.Application;
 import org.mule.runtime.deployment.model.api.artifact.ArtifactConfigurationProcessor;
 import org.mule.runtime.deployment.model.api.artifact.ArtifactContext;
-import org.mule.runtime.deployment.model.api.artifact.extension.ExtensionModelLoaderRepository;
 import org.mule.runtime.deployment.model.api.plugin.ArtifactPlugin;
 import org.mule.runtime.deployment.model.api.policy.PolicyTemplate;
 import org.mule.runtime.internal.memory.management.ArtifactMemoryManagementService;
@@ -74,7 +73,6 @@ public class DefaultApplicationPolicyInstance implements ApplicationPolicyInstan
   private final PolicyParametrization parametrization;
   private final ServiceRepository serviceRepository;
   private final ClassLoaderRepository classLoaderRepository;
-  private final ExtensionModelLoaderRepository extensionModelLoaderRepository;
   private final MuleContextListener muleContextListener;
   private final ArtifactConfigurationProcessor artifactConfigurationProcessor;
   private ArtifactContext policyContext;
@@ -89,7 +87,6 @@ public class DefaultApplicationPolicyInstance implements ApplicationPolicyInstan
    * @param serviceRepository              repository of available services. Non null.
    * @param classLoaderRepository          contains the registered classloaders that can be used to load serialized classes. Non
    *                                       null.
-   * @param extensionModelLoaderRepository {@link ExtensionModelLoaderRepository} with the available extension loaders. Non null.
    * @param muleContextListener            the listener to execute for specific events that occur on the {@link MuleContext} of
    *                                       the policy. May be {@code null}.
    * @param artifactConfigurationProcessor the processor to use for building the application model. Non null.
@@ -98,7 +95,6 @@ public class DefaultApplicationPolicyInstance implements ApplicationPolicyInstan
                                           PolicyParametrization parametrization,
                                           ServiceRepository serviceRepository,
                                           ClassLoaderRepository classLoaderRepository,
-                                          ExtensionModelLoaderRepository extensionModelLoaderRepository,
                                           MuleContextListener muleContextListener,
                                           ArtifactConfigurationProcessor artifactConfigurationProcessor) {
     this.application = application;
@@ -106,7 +102,6 @@ public class DefaultApplicationPolicyInstance implements ApplicationPolicyInstan
     this.parametrization = parametrization;
     this.serviceRepository = serviceRepository;
     this.classLoaderRepository = classLoaderRepository;
-    this.extensionModelLoaderRepository = extensionModelLoaderRepository;
     this.muleContextListener = muleContextListener;
     this.artifactConfigurationProcessor = artifactConfigurationProcessor;
   }
@@ -175,12 +170,12 @@ public class DefaultApplicationPolicyInstance implements ApplicationPolicyInstan
         if (featureFlaggingService.isEnabled(ENABLE_POLICY_ISOLATION)) {
           // The policy will not share extension models and configuration providers with the application that is being applied to.
           ArtifactExtensionManagerFactory artifactExtensionManagerFactory =
-              new ArtifactExtensionManagerFactory(template.getOwnArtifactPlugins(), extensionModelLoaderRepository,
+              new ArtifactExtensionManagerFactory(template.getOwnArtifactPlugins(),
                                                   new DefaultExtensionManagerFactory());
           return artifactExtensionManagerFactory.create(muleContext, getInheritedExtensionModels());
         } else {
           // The policy will share extension models and configuration providers with the application that is being applied to.
-          return new CompositeArtifactExtensionManagerFactory(application, extensionModelLoaderRepository,
+          return new CompositeArtifactExtensionManagerFactory(application,
                                                               template.getOwnArtifactPlugins(),
                                                               new DefaultExtensionManagerFactory()).create(muleContext);
         }

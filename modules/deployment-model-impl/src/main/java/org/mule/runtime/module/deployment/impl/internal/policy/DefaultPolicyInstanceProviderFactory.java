@@ -13,7 +13,6 @@ import org.mule.runtime.api.service.ServiceRepository;
 import org.mule.runtime.core.api.policy.PolicyParametrization;
 import org.mule.runtime.deployment.model.api.application.Application;
 import org.mule.runtime.deployment.model.api.artifact.ArtifactConfigurationProcessor;
-import org.mule.runtime.deployment.model.api.artifact.extension.ExtensionModelLoaderRepository;
 import org.mule.runtime.deployment.model.api.policy.PolicyTemplate;
 import org.mule.runtime.module.artifact.api.classloader.ClassLoaderRepository;
 
@@ -24,7 +23,6 @@ public class DefaultPolicyInstanceProviderFactory implements PolicyInstanceProvi
 
   private final ServiceRepository serviceRepository;
   private final ClassLoaderRepository classLoaderRepository;
-  private final ExtensionModelLoaderRepository extensionModelLoaderRepository;
   private final ArtifactConfigurationProcessor artifactConfigurationProcessor;
 
   /**
@@ -33,17 +31,13 @@ public class DefaultPolicyInstanceProviderFactory implements PolicyInstanceProvi
    * @param serviceRepository              contains available service instances. Non null.
    * @param classLoaderRepository          contains the registered classloaders that can be used to load serialized classes. Non
    *                                       null.
-   * @param extensionModelLoaderRepository {@link ExtensionModelLoaderRepository} with the available extension loaders. Non null.
    * @param artifactConfigurationProcessor the processor to use for building the application model. Non null.
    */
   public DefaultPolicyInstanceProviderFactory(ServiceRepository serviceRepository,
                                               ClassLoaderRepository classLoaderRepository,
-                                              ExtensionModelLoaderRepository extensionModelLoaderRepository,
                                               ArtifactConfigurationProcessor artifactConfigurationProcessor) {
-    this.extensionModelLoaderRepository = extensionModelLoaderRepository;
     checkArgument(serviceRepository != null, "serviceRepository cannot be null");
     checkArgument(classLoaderRepository != null, "classLoaderRepository cannot be null");
-    checkArgument(extensionModelLoaderRepository != null, "extensionModelLoaderRepository cannot be null");
     checkArgument(artifactConfigurationProcessor != null, "artifactConfigurationProcessor cannot be null");
 
     this.serviceRepository = serviceRepository;
@@ -56,7 +50,7 @@ public class DefaultPolicyInstanceProviderFactory implements PolicyInstanceProvi
                                           PolicyParametrization parametrization) {
     return new DefaultApplicationPolicyInstance(application, policyTemplate, parametrization, serviceRepository,
                                                 classLoaderRepository,
-                                                extensionModelLoaderRepository, null,
+                                                null,
                                                 artifactConfigurationProcessor);
   }
 

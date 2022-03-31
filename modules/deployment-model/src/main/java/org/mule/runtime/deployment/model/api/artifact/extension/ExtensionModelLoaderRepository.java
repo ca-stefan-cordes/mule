@@ -20,7 +20,9 @@ import java.util.function.Supplier;
  * Provides access to the {@link ExtensionModelLoader} available in the container.
  *
  * @since 4.0, moved to api in 4.5
+ * @deprecated Use {@link org.mule.runtime.module.artifact.activation.api.extension.ExtensionModelLoaderRepository} instead.
  */
+@Deprecated
 @FunctionalInterface
 public interface ExtensionModelLoaderRepository
     extends org.mule.runtime.module.artifact.activation.api.extension.ExtensionModelLoaderRepository {

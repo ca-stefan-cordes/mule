@@ -31,28 +31,26 @@ import java.util.function.Function;
 /**
  * Generates an extension model by introspecting the java classes of an extension.
  *
+ * @since 4.5
  */
 public class ClassIntrospectionExtensionModelGenerator implements ExtensionModelGenerator {
 
-  // private ArtifactClassLoaderResolver artifactClassLoaderResolver;
-
-  // private MuleDeployableArtifactClassLoader ownerArtifactClassLoader;
-  // private Function<BundleDescriptor, Optional<ArtifactPluginDescriptor>> pluginDescriptorResolver;
-  // private BiFunction<ArtifactClassLoader, ArtifactPluginDescriptor, ArtifactClassLoader> pluginClassLoaderResolver;
-
   private final Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory;
+  private final ExtensionModelLoaderRepository extensionModelLoaderManager;
 
   public ClassIntrospectionExtensionModelGenerator(Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory) {
     this.classLoaderFactory = classLoaderFactory;
+    this.extensionModelLoaderManager =
+        new MuleExtensionModelLoaderManager(ClassIntrospectionExtensionModelGenerator.class.getClassLoader());
+
   }
 
-  // @Override
   @Override
   public ExtensionModel obtainExtensionModel(ExtensionDiscoveryRequest discoveryRequest,
                                              ArtifactPluginDescriptor artifactPluginDescriptor,
                                              Set<ExtensionModel> dependencies) {
     return artifactPluginDescriptor.getExtensionModelDescriptorProperty()
-        .map(describer -> discoverExtensionThroughJsonDescriber(discoveryRequest.getLoaderRepository(),
+        .map(describer -> discoverExtensionThroughJsonDescriber(extensionModelLoaderManager,
                                                                 describer,
                                                                 dependencies,
                                                                 classLoaderFactory.apply(artifactPluginDescriptor)
@@ -86,9 +84,6 @@ public class ClassIntrospectionExtensionModelGenerator implements ExtensionModel
     ExtensionModelLoader loader = extensionModelLoaderRepository.getExtensionModelLoader(loaderDescriber)
         .orElseThrow(() -> new IllegalArgumentException(format("The identifier '%s' does not match with the describers available "
             + "to generate an ExtensionModel (working with the plugin '%s')", loaderDescriber.getId(), artifactName)));
-    // if (!extensions.contains(MuleExtensionModelProvider.getExtensionModel())) {
-    // extensions = ImmutableSet.<ExtensionModel>builder().addAll(extensions).addAll(discoverRuntimeExtensionModels()).build();
-    // }
     Map<String, Object> attributes = new HashMap<>(loaderDescriber.getAttributes());
     attributes.putAll(additionalAttributes);
 

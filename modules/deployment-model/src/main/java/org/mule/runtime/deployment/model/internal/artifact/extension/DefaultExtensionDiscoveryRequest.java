@@ -16,6 +16,7 @@ import org.mule.runtime.module.artifact.api.descriptor.ArtifactPluginDescriptor;
 import java.util.List;
 import java.util.Set;
 
+@Deprecated
 public class DefaultExtensionDiscoveryRequest implements ExtensionDiscoveryRequest {
 
   private final ExtensionModelLoaderRepository loaderRepository;

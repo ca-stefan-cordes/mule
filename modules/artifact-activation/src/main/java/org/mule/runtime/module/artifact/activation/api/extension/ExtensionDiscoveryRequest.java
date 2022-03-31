@@ -33,11 +33,6 @@ public interface ExtensionDiscoveryRequest {
   }
 
   /**
-   * @return {@link ExtensionModelLoaderRepository} with the available extension loaders.
-   */
-  ExtensionModelLoaderRepository getLoaderRepository();
-
-  /**
    * @return {@link ArtifactPluginDescriptor}s for artifact plugins deployed inside the artifact. Non null.
    */
   List<ArtifactPluginDescriptor> getArtifactPlugins();
@@ -66,16 +61,10 @@ public interface ExtensionDiscoveryRequest {
 
   public final class ExtensionDiscoveryRequestBuilder {
 
-    private ExtensionModelLoaderRepository loaderRepository;
     private List<ArtifactPluginDescriptor> artifactPlugins;
     private Set<ExtensionModel> parentArtifactExtensions = emptySet();
     private boolean parallelDiscovery = false;
     private boolean enrichDescriptions = true;
-
-    public ExtensionDiscoveryRequestBuilder setLoaderRepository(ExtensionModelLoaderRepository loaderRepository) {
-      this.loaderRepository = loaderRepository;
-      return this;
-    }
 
     public ExtensionDiscoveryRequestBuilder setArtifactPlugins(List<ArtifactPluginDescriptor> artifactPlugins) {
       this.artifactPlugins = artifactPlugins;
@@ -98,7 +87,7 @@ public interface ExtensionDiscoveryRequest {
     }
 
     public ExtensionDiscoveryRequest build() {
-      return new DefaultExtensionDiscoveryRequest(loaderRepository, artifactPlugins, parentArtifactExtensions,
+      return new DefaultExtensionDiscoveryRequest(artifactPlugins, parentArtifactExtensions,
                                                   parallelDiscovery, enrichDescriptions);
     }
   }
