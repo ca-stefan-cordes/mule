@@ -7,6 +7,7 @@
 package org.mule.runtime.module.artifact.activation.internal.extension;
 
 import static org.mule.runtime.api.dsl.DslResolvingContext.getDefault;
+import static org.mule.runtime.core.api.lifecycle.LifecycleUtils.startIfNeeded;
 import static org.mule.runtime.extension.api.loader.ExtensionModelLoadingRequest.builder;
 
 import static java.lang.String.format;
@@ -14,6 +15,8 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 
 import org.mule.runtime.api.deployment.meta.MulePluginModel;
+import org.mule.runtime.api.exception.MuleException;
+import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.api.meta.model.ExtensionModel;
 import org.mule.runtime.extension.api.loader.ExtensionModelLoader;
 import org.mule.runtime.module.artifact.activation.api.extension.ExtensionDiscoveryRequest;
@@ -29,20 +32,24 @@ import java.util.Set;
 import java.util.function.Function;
 
 /**
- * Generates an extension model by introspecting the java classes of an extension.
+ * Generates an extension model by delegating to the appropriate {@link ExtensionModelLoader}.
  *
  * @since 4.5
  */
-public class ClassIntrospectionExtensionModelGenerator implements ExtensionModelGenerator {
+public class RepositoryLookupExtensionModelGenerator implements ExtensionModelGenerator {
 
   private final Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory;
   private final ExtensionModelLoaderRepository extensionModelLoaderManager;
 
-  public ClassIntrospectionExtensionModelGenerator(Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory) {
+  public RepositoryLookupExtensionModelGenerator(Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory) {
     this.classLoaderFactory = classLoaderFactory;
     this.extensionModelLoaderManager =
-        new MuleExtensionModelLoaderManager(ClassIntrospectionExtensionModelGenerator.class.getClassLoader());
-
+        new MuleExtensionModelLoaderManager(RepositoryLookupExtensionModelGenerator.class.getClassLoader());
+    try {
+      startIfNeeded(this.extensionModelLoaderManager);
+    } catch (MuleException e) {
+      throw new MuleRuntimeException(e);
+    }
   }
 
   @Override

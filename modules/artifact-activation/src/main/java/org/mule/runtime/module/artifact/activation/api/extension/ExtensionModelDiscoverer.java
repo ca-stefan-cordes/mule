@@ -7,7 +7,7 @@
 package org.mule.runtime.module.artifact.activation.api.extension;
 
 import org.mule.runtime.api.meta.model.ExtensionModel;
-import org.mule.runtime.module.artifact.activation.internal.extension.ClassIntrospectionExtensionModelGenerator;
+import org.mule.runtime.module.artifact.activation.internal.extension.RepositoryLookupExtensionModelGenerator;
 import org.mule.runtime.module.artifact.activation.internal.extension.DefaultExtensionModelDiscoverer;
 import org.mule.runtime.module.artifact.api.classloader.ArtifactClassLoader;
 import org.mule.runtime.module.artifact.api.descriptor.ArtifactPluginDescriptor;
@@ -31,7 +31,7 @@ public interface ExtensionModelDiscoverer {
    * @return a newly created {@link ExtensionModelDiscoverer}.
    */
   public static ExtensionModelDiscoverer defaultExtensionModelDiscoverer(Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory) {
-    return new DefaultExtensionModelDiscoverer(new ClassIntrospectionExtensionModelGenerator(classLoaderFactory));
+    return new DefaultExtensionModelDiscoverer(new RepositoryLookupExtensionModelGenerator(classLoaderFactory));
   }
 
   /**
