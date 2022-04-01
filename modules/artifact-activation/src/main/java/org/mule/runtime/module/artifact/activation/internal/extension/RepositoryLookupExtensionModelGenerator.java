@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * Generates an extension model by delegating to the appropriate {@link ExtensionModelLoader}.
@@ -60,7 +61,7 @@ public class RepositoryLookupExtensionModelGenerator implements ExtensionModelGe
         .map(describer -> discoverExtensionThroughJsonDescriber(extensionModelLoaderManager,
                                                                 describer,
                                                                 dependencies,
-                                                                classLoaderFactory.apply(artifactPluginDescriptor)
+                                                                () -> classLoaderFactory.apply(artifactPluginDescriptor)
                                                                     .getClassLoader(),
                                                                 artifactPluginDescriptor.getName(),
                                                                 discoveryRequest.isEnrichDescriptions()
@@ -85,7 +86,7 @@ public class RepositoryLookupExtensionModelGenerator implements ExtensionModelGe
   private ExtensionModel discoverExtensionThroughJsonDescriber(ExtensionModelLoaderRepository extensionModelLoaderRepository,
                                                                LoaderDescriber loaderDescriber,
                                                                Set<ExtensionModel> dependencies,
-                                                               ClassLoader artifactClassloader,
+                                                               Supplier<ClassLoader> artifactClassloader,
                                                                String artifactName,
                                                                Map<String, Object> additionalAttributes) {
     ExtensionModelLoader loader = extensionModelLoaderRepository.getExtensionModelLoader(loaderDescriber)
