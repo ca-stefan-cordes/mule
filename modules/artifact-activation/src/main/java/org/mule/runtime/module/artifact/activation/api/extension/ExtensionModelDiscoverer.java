@@ -24,22 +24,22 @@ import java.util.function.Function;
 public interface ExtensionModelDiscoverer {
 
   /**
-   * Creates a {@link ExtensionModelDiscoverer} that will rely on class introspection for generating the extension models for
+   * Creates an {@link ExtensionModelDiscoverer} that will rely on class introspection for generating the extension models for
    * plugins developed with the Java SDK.
    * 
    * @param classLoaderFactory a way to obtain the classloader for a given plugin.
    * @return a newly created {@link ExtensionModelDiscoverer}.
    */
-  public static ExtensionModelDiscoverer defaultExtensionModelDiscoverer(Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory) {
+  static ExtensionModelDiscoverer defaultExtensionModelDiscoverer(Function<ArtifactPluginDescriptor, ArtifactClassLoader> classLoaderFactory) {
     return new DefaultExtensionModelDiscoverer(new RepositoryLookupExtensionModelGenerator(classLoaderFactory));
   }
 
   /**
-   * Discover the extension models provided by the Mule Runtime.
+   * Discovers the extension models provided by the Mule Runtime.
    *
    * @return {@link Set} of the runtime provided {@link ExtensionModel}s.
    */
-  public Set<ExtensionModel> discoverRuntimeExtensionModels();
+  Set<ExtensionModel> discoverRuntimeExtensionModels();
 
   /**
    * For each artifactPlugin discovers the {@link ExtensionModel}.
@@ -47,6 +47,6 @@ public interface ExtensionModelDiscoverer {
    * @param discoveryRequest an object containing the parameterization of the discovery process.
    * @return The discovered {@link ExtensionModel}s.
    */
-  public Set<ExtensionModel> discoverPluginsExtensionModels(ExtensionDiscoveryRequest discoveryRequest);
+  Set<ExtensionModel> discoverPluginsExtensionModels(ExtensionDiscoveryRequest discoveryRequest);
 
 }

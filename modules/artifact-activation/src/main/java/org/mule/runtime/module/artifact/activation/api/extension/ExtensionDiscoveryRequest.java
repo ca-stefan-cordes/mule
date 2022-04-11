@@ -33,7 +33,7 @@ public interface ExtensionDiscoveryRequest {
   }
 
   /**
-   * @return {@link ArtifactPluginDescriptor}s for artifact plugins deployed inside the artifact. Non null.
+   * @return {@link ArtifactPluginDescriptor}s for artifact plugins deployed inside the artifact. Non-null.
    */
   List<ArtifactPluginDescriptor> getArtifactPlugins();
 
@@ -59,7 +59,7 @@ public interface ExtensionDiscoveryRequest {
    */
   boolean isEnrichDescriptions();
 
-  public final class ExtensionDiscoveryRequestBuilder {
+  final class ExtensionDiscoveryRequestBuilder {
 
     private List<ArtifactPluginDescriptor> artifactPlugins;
     private Set<ExtensionModel> parentArtifactExtensions = emptySet();
