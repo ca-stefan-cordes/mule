@@ -11,7 +11,9 @@ import static java.util.Collections.unmodifiableMap;
 
 import org.mule.runtime.api.message.Error;
 import org.mule.runtime.api.message.Message;
+import org.mule.runtime.api.util.Pair;
 import org.mule.runtime.core.api.event.CoreEvent;
+import org.mule.runtime.core.internal.exception.MessagingException;
 import org.mule.runtime.core.privileged.processor.chain.MessageProcessorChain;
 
 import java.util.Map;
@@ -28,7 +30,7 @@ import java.util.Map;
 public final class RoutingResult {
 
   private final Map<String, Message> successfulRoutesResultMap;
-  private final Map<String, Error> failedRoutesErrorMap;
+  private final Map<String, Pair<Error, MessagingException>> failedRoutesErrorMap;
 
   public RoutingResult(Map<String, Message> successfulRoutesResultMap, Map<String, Error> failedRoutesErrorMap) {
     this.successfulRoutesResultMap = unmodifiableMap(successfulRoutesResultMap);
@@ -39,7 +41,7 @@ public final class RoutingResult {
     return successfulRoutesResultMap;
   }
 
-  public Map<String, Error> getFailures() {
+  public Map<String, Pair<Error, MessagingException>> getFailures() {
     return failedRoutesErrorMap;
   }
 
