@@ -18,7 +18,9 @@ import org.mule.runtime.api.i18n.I18nMessage;
 import org.mule.runtime.api.i18n.I18nMessageFactory;
 import org.mule.runtime.api.message.Error;
 import org.mule.runtime.api.message.Message;
+import org.mule.runtime.api.util.Pair;
 import org.mule.runtime.core.internal.config.ExceptionHelper;
+import org.mule.runtime.core.internal.exception.MessagingException;
 import org.mule.runtime.core.privileged.processor.Router;
 
 import java.util.List;
@@ -56,14 +58,14 @@ public final class CompositeRoutingException extends MuleException implements Co
     StringBuilder builder = new StringBuilder();
     builder.append(MESSAGE_TITLE).append(lineSeparator());
 
-    for (Entry<String, Error> entry : routingResult.getFailures().entrySet()) {
+    for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailures().entrySet()) {
       String routeSubtitle = String.format("Route %s: ", entry.getKey());
-      MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getCause());
+      MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
       if (muleException != null) {
         builder.append(routeSubtitle).append(muleException.getDetailedMessage());
       } else {
         builder.append(routeSubtitle)
-            .append("Caught exception in Exception Strategy: " + entry.getValue().getCause().getMessage());
+            .append("Caught exception in Exception Strategy: " + entry.getValue().getFirst().getCause().getMessage());
       }
     }
     return builder.toString();
@@ -71,8 +73,8 @@ public final class CompositeRoutingException extends MuleException implements Co
 
   private static I18nMessage buildExceptionMessage(RoutingResult routingResult) {
     StringBuilder builder = new StringBuilder();
-    for (Entry<String, Error> routeResult : routingResult.getFailures().entrySet()) {
-      Throwable routeException = routeResult.getValue().getCause();
+    for (Entry<String, Pair<Error, MessagingException>> routeResult : routingResult.getFailures().entrySet()) {
+      Throwable routeException = routeResult.getValue().getFirst().getCause();
       builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ").append(routeException.getClass().getName())
           .append(": ").append(routeException.getMessage());
     }
@@ -83,7 +85,7 @@ public final class CompositeRoutingException extends MuleException implements Co
 
   @Override
   public List<Error> getErrors() {
-    return routingResult.getFailures().values().stream().collect(toList());
+    return routingResult.getFailures().values().stream().map(pair -> pair.getFirst()).collect(toList());
   }
 
   @Override

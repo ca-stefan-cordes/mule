@@ -20,10 +20,10 @@ import java.util.Map;
 
 /**
  * The result of routing an {@link CoreEvent} to {@code n} {@link MessageProcessorChain} routes, or {@code n} {@link CoreEvent}'s
- * to the same {@link MessageProcessorChain} route typically by using {@link ForkJoinStrategy}.
+ * to the same {@link MessageProcessorChain} route typically by using ForkJoinStrategy.
  * <p>
- * Results are indexed using the order of {@link RoutingPair} as defined by the router. With
- * {@link org.mule.runtime.core.internal.routing.ScatterGatherRouter} this is the order of routes as defined in configuration.
+ * Results are indexed using the order of RoutingPair as defined by the router. With ScatterGatherRouter this is the order of
+ * routes as defined in configuration.
  *
  * @since 4.0
  */
@@ -32,7 +32,8 @@ public final class RoutingResult {
   private final Map<String, Message> successfulRoutesResultMap;
   private final Map<String, Pair<Error, MessagingException>> failedRoutesErrorMap;
 
-  public RoutingResult(Map<String, Message> successfulRoutesResultMap, Map<String, Error> failedRoutesErrorMap) {
+  public RoutingResult(Map<String, Message> successfulRoutesResultMap,
+                       Map<String, Pair<Error, MessagingException>> failedRoutesErrorMap) {
     this.successfulRoutesResultMap = unmodifiableMap(successfulRoutesResultMap);
     this.failedRoutesErrorMap = unmodifiableMap(failedRoutesErrorMap);
   }
