@@ -58,7 +58,7 @@ public final class CompositeRoutingException extends MuleException implements Co
     StringBuilder builder = new StringBuilder();
     builder.append(MESSAGE_TITLE).append(lineSeparator());
 
-    for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailures().entrySet()) {
+    for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailuresWithMessagingException().entrySet()) {
       String routeSubtitle = String.format("Route %s: ", entry.getKey());
       MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
       if (muleException != null) {
@@ -73,7 +73,8 @@ public final class CompositeRoutingException extends MuleException implements Co
 
   private static I18nMessage buildExceptionMessage(RoutingResult routingResult) {
     StringBuilder builder = new StringBuilder();
-    for (Entry<String, Pair<Error, MessagingException>> routeResult : routingResult.getFailures().entrySet()) {
+    for (Entry<String, Pair<Error, MessagingException>> routeResult : routingResult.getFailuresWithMessagingException()
+        .entrySet()) {
       Throwable routeException = routeResult.getValue().getFirst().getCause();
       builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ").append(routeException.getClass().getName())
           .append(": ").append(routeException.getMessage());
@@ -85,7 +86,7 @@ public final class CompositeRoutingException extends MuleException implements Co
 
   @Override
   public List<Error> getErrors() {
-    return routingResult.getFailures().values().stream().map(pair -> pair.getFirst()).collect(toList());
+    return routingResult.getFailuresWithMessagingException().values().stream().map(pair -> pair.getFirst()).collect(toList());
   }
 
   @Override
