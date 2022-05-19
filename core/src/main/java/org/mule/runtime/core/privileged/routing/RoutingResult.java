@@ -7,6 +7,7 @@
 package org.mule.runtime.core.privileged.routing;
 
 
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.unmodifiableMap;
 
 import org.mule.runtime.api.message.Error;
@@ -30,20 +31,32 @@ import java.util.Map;
 public final class RoutingResult {
 
   private final Map<String, Message> successfulRoutesResultMap;
-  private final Map<String, Pair<Error, MessagingException>> failedRoutesErrorMap;
+  private final Map<String, Error> failedRoutesErrorMap;
+  private final Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap;
 
-  public RoutingResult(Map<String, Message> successfulRoutesResultMap,
-                       Map<String, Pair<Error, MessagingException>> failedRoutesErrorMap) {
+  public RoutingResult(Map<String, Message> successfulRoutesResultMap, Map<String, Error> failedRoutesErrorMap) {
     this.successfulRoutesResultMap = unmodifiableMap(successfulRoutesResultMap);
     this.failedRoutesErrorMap = unmodifiableMap(failedRoutesErrorMap);
+    this.failedRoutesErrorExceptionMap = emptyMap();
+  }
+
+  public RoutingResult(Map<String, Message> successfulRoutesResultMap,
+                       Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap, boolean details) {
+    this.successfulRoutesResultMap = unmodifiableMap(successfulRoutesResultMap);
+    this.failedRoutesErrorExceptionMap = unmodifiableMap(failedRoutesErrorExceptionMap);
+    this.failedRoutesErrorMap = emptyMap();
   }
 
   public Map<String, Message> getResults() {
     return successfulRoutesResultMap;
   }
 
-  public Map<String, Pair<Error, MessagingException>> getFailures() {
+  public Map<String, Error> getFailures() {
     return failedRoutesErrorMap;
   }
 
+  public Map<String, Pair<Error, MessagingException>> getFailuresWithMessagingException() {
+    return failedRoutesErrorExceptionMap;
+  }
+  // todo : pair -> either
 }
