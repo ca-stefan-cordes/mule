@@ -32,7 +32,7 @@ public final class RoutingResult {
 
   private final Map<String, Message> successfulRoutesResultMap;
   private final Map<String, Error> failedRoutesErrorMap;
-  private final Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap;
+  private Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap;
 
   public RoutingResult(Map<String, Message> successfulRoutesResultMap, Map<String, Error> failedRoutesErrorMap) {
     this.successfulRoutesResultMap = unmodifiableMap(successfulRoutesResultMap);
@@ -40,11 +40,14 @@ public final class RoutingResult {
     this.failedRoutesErrorExceptionMap = emptyMap();
   }
 
-  public RoutingResult(Map<String, Message> successfulRoutesResultMap,
-                       Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap, boolean details) {
-    this.successfulRoutesResultMap = unmodifiableMap(successfulRoutesResultMap);
-    this.failedRoutesErrorExceptionMap = unmodifiableMap(failedRoutesErrorExceptionMap);
-    this.failedRoutesErrorMap = emptyMap();
+  public static RoutingResult fromDetailedException(Map<String, Message> successfulRoutesResultMap, Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap) {
+    RoutingResult routingResult = new RoutingResult(successfulRoutesResultMap, emptyMap());
+    routingResult.setFailedRoutesErrorExceptionMap(failedRoutesErrorExceptionMap);
+    return routingResult;
+  }
+
+  private void setFailedRoutesErrorExceptionMap(Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap) {
+    this.failedRoutesErrorExceptionMap = failedRoutesErrorExceptionMap;
   }
 
   public Map<String, Message> getResults() {
