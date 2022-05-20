@@ -40,7 +40,8 @@ public final class RoutingResult {
     this.failedRoutesErrorExceptionMap = emptyMap();
   }
 
-  public static RoutingResult fromDetailedException(Map<String, Message> successfulRoutesResultMap, Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap) {
+  public static RoutingResult routingResultFromDetailedException(Map<String, Message> successfulRoutesResultMap,
+                                                                 Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap) {
     RoutingResult routingResult = new RoutingResult(successfulRoutesResultMap, emptyMap());
     routingResult.setFailedRoutesErrorExceptionMap(failedRoutesErrorExceptionMap);
     return routingResult;

@@ -60,18 +60,28 @@ public final class CompositeRoutingException extends MuleException implements Co
 
     if (!routingResult.getFailures().isEmpty()) {
       // Process with original logic
+      for (Entry<String, Error> entry : routingResult.getFailures().entrySet()) {
+        String routeSubtitle = String.format("Route %s: ", entry.getKey());
+        MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getCause());
+        if (muleException != null) {
+          builder.append(routeSubtitle).append(muleException.getDetailedMessage());
+        } else {
+          builder.append(routeSubtitle)
+              .append("Caught exception in Exception Strategy: " + entry.getValue().getCause().getMessage());
+        }
+      }
     } else {
       // New logic
-    }
-
-    for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailuresWithMessagingException().entrySet()) {
-      String routeSubtitle = String.format("Route %s: ", entry.getKey());
-      MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
-      if (muleException != null) {
-        builder.append(routeSubtitle).append(muleException.getDetailedMessage());
-      } else {
-        builder.append(routeSubtitle)
-            .append("Caught exception in Exception Strategy: " + entry.getValue().getFirst().getCause().getMessage());
+      //todo: replace routingresult for the new logic
+      for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailuresWithMessagingException().entrySet()) {
+        String routeSubtitle = String.format("Route %s: ", entry.getKey());
+        MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
+        if (muleException != null) {
+          builder.append(routeSubtitle).append(muleException.getDetailedMessage());
+        } else {
+          builder.append(routeSubtitle)
+              .append("Caught exception in Exception Strategy: " + entry.getValue().getFirst().getCause().getMessage());
+        }
       }
     }
     return builder.toString();
@@ -79,20 +89,37 @@ public final class CompositeRoutingException extends MuleException implements Co
 
   private static I18nMessage buildExceptionMessage(RoutingResult routingResult) {
     StringBuilder builder = new StringBuilder();
-    for (Entry<String, Pair<Error, MessagingException>> routeResult : routingResult.getFailuresWithMessagingException()
-        .entrySet()) {
-      Throwable routeException = routeResult.getValue().getFirst().getCause();
-      builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ").append(routeException.getClass().getName())
-          .append(": ").append(routeException.getMessage());
+    if (!routingResult.getFailures().isEmpty()) {
+      // Process with original logic
+      for (Entry<String, Error> routeResult : routingResult.getFailures().entrySet()) {
+        Throwable routeException = routeResult.getValue().getCause();
+        builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
+            .append(routeException.getClass().getName())
+            .append(": ").append(routeException.getMessage());
+      }
+    } else {
+      // New logic
+      for (Entry<String, Pair<Error, MessagingException>> routeResult : routingResult.getFailuresWithMessagingException()
+          .entrySet()) {
+        Throwable routeException = routeResult.getValue().getFirst().getCause();
+        builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
+            .append(routeException.getClass().getName())
+            .append(": ").append(routeException.getMessage());
+      }
     }
-
     builder.insert(0, MESSAGE_TITLE);
     return I18nMessageFactory.createStaticMessage(builder.toString());
   }
 
   @Override
   public List<Error> getErrors() {
-    return routingResult.getFailuresWithMessagingException().values().stream().map(pair -> pair.getFirst()).collect(toList());
+    if (!routingResult.getFailures().isEmpty()) {
+      // Process with original logic
+      return routingResult.getFailures().values().stream().collect(toList());
+    } else {
+      // New logic
+      return routingResult.getFailuresWithMessagingException().values().stream().map(pair -> pair.getFirst()).collect(toList());
+    }
   }
 
   @Override
