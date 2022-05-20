@@ -59,8 +59,8 @@ public final class RoutingResult {
     return failedRoutesErrorMap;
   }
 
-  public Map<String, Pair<Error, MessagingException>> getFailuresWithMessagingException() {
-    return failedRoutesErrorExceptionMap;
-  }
+   public Map<String, Pair<Error, MessagingException>> getFailuresWithMessagingException() {
+   return failedRoutesErrorExceptionMap;
+   }
 
 }

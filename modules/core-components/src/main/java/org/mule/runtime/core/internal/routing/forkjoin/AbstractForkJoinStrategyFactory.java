@@ -216,18 +216,22 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
   private CompositeRoutingException createCompositeRoutingException(List<Pair<CoreEvent, MessagingException>> results) {
     Map<String, Message> successMap = new LinkedHashMap<>();
     Map<String, Pair<Error, MessagingException>> errorMap = new LinkedHashMap<>();
+    // Map<String, Error> errorMap = new LinkedHashMap<>();
+
 
     for (Pair<CoreEvent, MessagingException> eventMessagingExceptionPair : results) {
       String key = Integer.toString(eventMessagingExceptionPair.getFirst().getGroupCorrelation().get().getSequence());
       if (eventMessagingExceptionPair.getFirst().getError().isPresent()) {
-        errorMap
-            .put(key,
-                 new Pair<>(eventMessagingExceptionPair.getFirst().getError().get(), eventMessagingExceptionPair.getSecond()));
+        errorMap.put(key, new Pair<>(eventMessagingExceptionPair.getFirst().getError().get(),
+                                     eventMessagingExceptionPair.getSecond()));
+        // errorMap.put(key, eventMessagingExceptionPair.getFirst().getError().get());
       } else {
         successMap.put(key, eventMessagingExceptionPair.getFirst().getMessage());
       }
     }
-    return new CompositeRoutingException(new RoutingResult(successMap, errorMap));
+    // return new CompositeRoutingException(new RoutingResult(successMap, errorMap));
+    return new CompositeRoutingException(RoutingResult.routingResultFromDetailedException(successMap, errorMap));
+
   }
 
   private Consumer<List<CoreEvent>> mergeVariables(CoreEvent original, CoreEvent.Builder result) {
