@@ -62,5 +62,5 @@ public final class RoutingResult {
   public Map<String, Pair<Error, MessagingException>> getFailuresWithMessagingException() {
     return failedRoutesErrorExceptionMap;
   }
-  // todo : pair -> either
+
 }

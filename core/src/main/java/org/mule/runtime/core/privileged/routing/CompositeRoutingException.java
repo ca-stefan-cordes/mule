@@ -72,7 +72,7 @@ public final class CompositeRoutingException extends MuleException implements Co
       }
     } else {
       // New logic
-      //todo: replace routingresult for the new logic
+      // todo: replace routingresult for the new logic
       for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailuresWithMessagingException().entrySet()) {
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
         MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
