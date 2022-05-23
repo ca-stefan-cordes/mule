@@ -15,6 +15,7 @@ import org.mule.runtime.api.message.Message;
 import org.mule.runtime.api.util.Pair;
 import org.mule.runtime.core.api.event.CoreEvent;
 import org.mule.runtime.core.internal.exception.MessagingException;
+import org.mule.runtime.core.privileged.exception.EventProcessingException;
 import org.mule.runtime.core.privileged.processor.chain.MessageProcessorChain;
 
 import java.util.Map;
@@ -32,7 +33,7 @@ public final class RoutingResult {
 
   private final Map<String, Message> successfulRoutesResultMap;
   private final Map<String, Error> failedRoutesErrorMap;
-  private Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap;
+  private Map<String, Pair<Error, EventProcessingException>> failedRoutesErrorExceptionMap;
 
   public RoutingResult(Map<String, Message> successfulRoutesResultMap, Map<String, Error> failedRoutesErrorMap) {
     this.successfulRoutesResultMap = unmodifiableMap(successfulRoutesResultMap);
@@ -41,13 +42,13 @@ public final class RoutingResult {
   }
 
   public static RoutingResult routingResultFromDetailedException(Map<String, Message> successfulRoutesResultMap,
-                                                                 Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap) {
+                                                                 Map<String, Pair<Error, EventProcessingException>> failedRoutesErrorExceptionMap) {
     RoutingResult routingResult = new RoutingResult(successfulRoutesResultMap, emptyMap());
     routingResult.setFailedRoutesErrorExceptionMap(failedRoutesErrorExceptionMap);
     return routingResult;
   }
 
-  private void setFailedRoutesErrorExceptionMap(Map<String, Pair<Error, MessagingException>> failedRoutesErrorExceptionMap) {
+  private void setFailedRoutesErrorExceptionMap(Map<String, Pair<Error, EventProcessingException>> failedRoutesErrorExceptionMap) {
     this.failedRoutesErrorExceptionMap = failedRoutesErrorExceptionMap;
   }
 
@@ -59,8 +60,8 @@ public final class RoutingResult {
     return failedRoutesErrorMap;
   }
 
-   public Map<String, Pair<Error, MessagingException>> getFailuresWithMessagingException() {
-   return failedRoutesErrorExceptionMap;
-   }
+  public Map<String, Pair<Error, EventProcessingException>> getFailuresWithMessagingException() {
+    return failedRoutesErrorExceptionMap;
+  }
 
 }

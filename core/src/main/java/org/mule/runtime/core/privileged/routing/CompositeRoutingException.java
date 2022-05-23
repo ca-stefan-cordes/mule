@@ -73,16 +73,17 @@ public final class CompositeRoutingException extends MuleException implements Co
     } else {
       // New logic
       // todo: replace routingresult for the new logic
-      for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailuresWithMessagingException().entrySet()) {
-        String routeSubtitle = String.format("Route %s: ", entry.getKey());
-        MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
-        if (muleException != null) {
-          builder.append(routeSubtitle).append(muleException.getDetailedMessage());
-        } else {
-          builder.append(routeSubtitle)
-              .append("Caught exception in Exception Strategy: " + entry.getValue().getFirst().getCause().getMessage());
-        }
-      }
+      // for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailuresWithMessagingException().entrySet())
+      // {
+      // String routeSubtitle = String.format("Route %s: ", entry.getKey());
+      // MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
+      // if (muleException != null) {
+      // builder.append(routeSubtitle).append(muleException.getDetailedMessage());
+      // } else {
+      // builder.append(routeSubtitle)
+      // .append("Caught exception in Exception Strategy: " + entry.getValue().getFirst().getCause().getMessage());
+      // }
+      // }
     }
     return builder.toString();
   }
@@ -99,13 +100,13 @@ public final class CompositeRoutingException extends MuleException implements Co
       }
     } else {
       // New logic
-      for (Entry<String, Pair<Error, MessagingException>> routeResult : routingResult.getFailuresWithMessagingException()
-          .entrySet()) {
-        Throwable routeException = routeResult.getValue().getFirst().getCause();
-        builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
-            .append(routeException.getClass().getName())
-            .append(": ").append(routeException.getMessage());
-      }
+      // for (Entry<String, Pair<Error, MessagingException>> routeResult : routingResult.getFailuresWithMessagingException()
+      // .entrySet()) {
+      // Throwable routeException = routeResult.getValue().getFirst().getCause();
+      // builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
+      // .append(routeException.getClass().getName())
+      // .append(": ").append(routeException.getMessage());
+      // }
     }
     builder.insert(0, MESSAGE_TITLE);
     return I18nMessageFactory.createStaticMessage(builder.toString());
