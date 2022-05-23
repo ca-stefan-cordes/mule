@@ -38,6 +38,7 @@ import org.mule.runtime.core.internal.message.ErrorBuilder;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategy;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategy.RoutingPair;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategyFactory;
+import org.mule.runtime.core.privileged.exception.EventProcessingException;
 import org.mule.runtime.core.privileged.routing.CompositeRoutingException;
 import org.mule.runtime.core.privileged.routing.RoutingResult;
 
@@ -215,7 +216,7 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
 
   private CompositeRoutingException createCompositeRoutingException(List<Pair<CoreEvent, MessagingException>> results) {
     Map<String, Message> successMap = new LinkedHashMap<>();
-    Map<String, Pair<Error, MessagingException>> errorMap = new LinkedHashMap<>();
+    Map<String, Pair<Error, EventProcessingException>> errorMap = new LinkedHashMap<>();
     // Map<String, Error> errorMap = new LinkedHashMap<>();
 
 
