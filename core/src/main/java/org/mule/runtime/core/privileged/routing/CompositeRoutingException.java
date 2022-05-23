@@ -24,10 +24,14 @@ import org.mule.runtime.core.internal.config.ExceptionHelper;
 import org.mule.runtime.core.privileged.exception.EventProcessingException;
 import org.mule.runtime.core.privileged.processor.Router;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A {@link MuleException} used to aggregate exceptions thrown by several routes in the context of a single {@link Router}. This
@@ -45,6 +49,7 @@ public final class CompositeRoutingException extends MuleException implements Co
   private static final long serialVersionUID = -4421728527040579605L;
 
   private final RoutingResult routingResult;
+  private static final Logger LOGGER = LoggerFactory.getLogger(CompositeRoutingException.class);
 
   /**
    * Constructs a new {@link CompositeRoutingException}
@@ -75,11 +80,16 @@ public final class CompositeRoutingException extends MuleException implements Co
       }
     } else {
       // New logic
-
-      Method getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithMessagingException");
-      getDetailedFailuresMethod.setAccessible(true);
-      Map<String, Pair<Error, EventProcessingException>> detailedFailures =
-          (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
+      Method getDetailedFailuresMethod = null;
+      Map<String, Pair<Error, EventProcessingException>> detailedFailures = null;
+      try {
+        getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithMessagingException");
+        detailedFailures =
+            (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
+      } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+        e.printStackTrace();
+        LOGGER.warn("Invalid Invocation, Expected method doesn't exist: getFailuresWithMessagingException");
+      }
 
       for (Entry<String, Pair<Error, EventProcessingException>> entry : detailedFailures.entrySet()) {
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
@@ -107,12 +117,16 @@ public final class CompositeRoutingException extends MuleException implements Co
       }
     } else {
       // New logic
-
-      Method getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithMessagingException");
-      getDetailedFailuresMethod.setAccessible(true);
-      Map<String, Pair<Error, EventProcessingException>> detailedFailures =
-          (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
-
+      Method getDetailedFailuresMethod = null;
+      Map<String, Pair<Error, EventProcessingException>> detailedFailures = null;
+      try {
+        getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithMessagingException");
+        detailedFailures =
+            (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
+      } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+        e.printStackTrace();
+        LOGGER.warn("Invalid Invocation, Expected method doesn't exist: getFailuresWithMessagingException");
+      }
       for (Entry<String, Pair<Error, EventProcessingException>> routeResult : detailedFailures.entrySet()) {
         Throwable routeException = routeResult.getValue().getFirst().getCause();
         builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")

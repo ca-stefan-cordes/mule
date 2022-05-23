@@ -56,9 +56,18 @@ public final class RoutingResult {
   }
 
   public Map<String, Error> getFailures() {
+    if (!failedRoutesErrorMap.isEmpty()) {
+      return failedRoutesErrorMap;
+    }
+    if (!failedRoutesErrorExceptionMap.isEmpty()) {
+      // modify //todo: only return error for this, not to break backward compatibility
+      // return failedRoutesErrorExceptionMap.entrySet().stream().map(x -> x.getKey(), ) failedRoutesErrorExceptionMap; //after
+      // modification
+    }
     return failedRoutesErrorMap;
   }
 
+  // todo: getFailures : return non-empty map by converting the result of existing map
   public Map<String, Pair<Error, EventProcessingException>> getFailuresWithMessagingException() {
     return failedRoutesErrorExceptionMap;
   }
