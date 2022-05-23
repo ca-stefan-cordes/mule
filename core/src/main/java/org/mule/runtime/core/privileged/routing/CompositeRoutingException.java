@@ -7,9 +7,10 @@
 
 package org.mule.runtime.core.privileged.routing;
 
+import static org.mule.runtime.api.message.Message.of;
+
 import static java.lang.System.lineSeparator;
 import static java.util.stream.Collectors.toList;
-import static org.mule.runtime.api.message.Message.of;
 
 import org.mule.runtime.api.exception.ComposedErrorException;
 import org.mule.runtime.api.exception.ErrorMessageAwareException;
@@ -20,10 +21,12 @@ import org.mule.runtime.api.message.Error;
 import org.mule.runtime.api.message.Message;
 import org.mule.runtime.api.util.Pair;
 import org.mule.runtime.core.internal.config.ExceptionHelper;
-import org.mule.runtime.core.internal.exception.MessagingException;
+import org.mule.runtime.core.privileged.exception.EventProcessingException;
 import org.mule.runtime.core.privileged.processor.Router;
 
+import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 /**
@@ -72,18 +75,22 @@ public final class CompositeRoutingException extends MuleException implements Co
       }
     } else {
       // New logic
-      // todo: replace routingresult for the new logic
-      // for (Entry<String, Pair<Error, MessagingException>> entry : routingResult.getFailuresWithMessagingException().entrySet())
-      // {
-      // String routeSubtitle = String.format("Route %s: ", entry.getKey());
-      // MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
-      // if (muleException != null) {
-      // builder.append(routeSubtitle).append(muleException.getDetailedMessage());
-      // } else {
-      // builder.append(routeSubtitle)
-      // .append("Caught exception in Exception Strategy: " + entry.getValue().getFirst().getCause().getMessage());
-      // }
-      // }
+
+      Method getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithMessagingException");
+      getDetailedFailuresMethod.setAccessible(true);
+      Map<String, Pair<Error, EventProcessingException>> detailedFailures =
+          (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
+
+      for (Entry<String, Pair<Error, EventProcessingException>> entry : detailedFailures.entrySet()) {
+        String routeSubtitle = String.format("Route %s: ", entry.getKey());
+        MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
+        if (muleException != null) {
+          builder.append(routeSubtitle).append(muleException.getDetailedMessage());
+        } else {
+          builder.append(routeSubtitle)
+              .append("Caught exception in Exception Strategy: " + entry.getValue().getFirst().getCause().getMessage());
+        }
+      }
     }
     return builder.toString();
   }
@@ -100,13 +107,18 @@ public final class CompositeRoutingException extends MuleException implements Co
       }
     } else {
       // New logic
-      // for (Entry<String, Pair<Error, MessagingException>> routeResult : routingResult.getFailuresWithMessagingException()
-      // .entrySet()) {
-      // Throwable routeException = routeResult.getValue().getFirst().getCause();
-      // builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
-      // .append(routeException.getClass().getName())
-      // .append(": ").append(routeException.getMessage());
-      // }
+
+      Method getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithMessagingException");
+      getDetailedFailuresMethod.setAccessible(true);
+      Map<String, Pair<Error, EventProcessingException>> detailedFailures =
+          (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
+
+      for (Entry<String, Pair<Error, EventProcessingException>> routeResult : detailedFailures.entrySet()) {
+        Throwable routeException = routeResult.getValue().getFirst().getCause();
+        builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
+            .append(routeException.getClass().getName())
+            .append(": ").append(routeException.getMessage());
+      }
     }
     builder.insert(0, MESSAGE_TITLE);
     return I18nMessageFactory.createStaticMessage(builder.toString());
