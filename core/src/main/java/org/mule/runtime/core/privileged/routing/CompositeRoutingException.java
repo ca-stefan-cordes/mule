@@ -66,7 +66,7 @@ public final class CompositeRoutingException extends MuleException implements Co
     StringBuilder builder = new StringBuilder();
     builder.append(MESSAGE_TITLE).append(lineSeparator());
 
-    if (!routingResult.getFailures().isEmpty()) {
+    if (!routingResult.getFailures().isEmpty()) { // todo: change this if; map // clean it // either
       // Process with original logic
       for (Entry<String, Error> entry : routingResult.getFailures().entrySet()) {
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
@@ -93,13 +93,13 @@ public final class CompositeRoutingException extends MuleException implements Co
 
       for (Entry<String, Pair<Error, EventProcessingException>> entry : detailedFailures.entrySet()) {
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
-        MuleException muleException = ExceptionHelper.getRootMuleException(entry.getValue().getSecond().getCause());
-        if (muleException != null) {
-          builder.append(routeSubtitle).append(muleException.getDetailedMessage());
-        } else {
-          builder.append(routeSubtitle)
-              .append("Caught exception in Exception Strategy: " + entry.getValue().getFirst().getCause().getMessage());
-        }
+        MuleException muleException = entry.getValue().getSecond().;
+
+        // builder.append(routeSubtitle).append(muleException.getDetailedMessage());
+        builder.append(lineSeparator());
+        builder.append(routeSubtitle).append(muleException.getDetailedMessage());
+        // builder.append(routeSubtitle)
+        // .append("Caught exception in Exception Strategy: " + entry.getValue().getSecond().getCause().getMessage());
       }
     }
     return builder.toString();
@@ -128,7 +128,7 @@ public final class CompositeRoutingException extends MuleException implements Co
         LOGGER.warn("Invalid Invocation, Expected method doesn't exist: getFailuresWithMessagingException");
       }
       for (Entry<String, Pair<Error, EventProcessingException>> routeResult : detailedFailures.entrySet()) {
-        Throwable routeException = routeResult.getValue().getFirst().getCause();
+        Throwable routeException = routeResult.getValue().getSecond();
         builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
             .append(routeException.getClass().getName())
             .append(": ").append(routeException.getMessage());
