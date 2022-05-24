@@ -66,7 +66,18 @@ public final class CompositeRoutingException extends MuleException implements Co
     StringBuilder builder = new StringBuilder();
     builder.append(MESSAGE_TITLE).append(lineSeparator());
 
-    if (!routingResult.getFailures().isEmpty()) { // todo: refactor
+    Method getDetailedFailuresMethod = null;
+    Map<String, Pair<Error, EventProcessingException>> detailedFailures = null;
+    try {
+      getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithException");
+      detailedFailures =
+          (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
+    } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
+      e.printStackTrace();
+      LOGGER.warn("Invalid Invocation, Expected method doesn't exist: getFailuresWithMessagingException");
+    }
+    //todo: refactor
+    if (detailedFailures.isEmpty()) {
       // Process with original logic
       for (Entry<String, Error> entry : routingResult.getFailures().entrySet()) {
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
@@ -80,17 +91,6 @@ public final class CompositeRoutingException extends MuleException implements Co
       }
     } else {
       // New logic
-      Method getDetailedFailuresMethod = null;
-      Map<String, Pair<Error, EventProcessingException>> detailedFailures = null;
-      try {
-        getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithException");
-        detailedFailures =
-            (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
-      } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-        e.printStackTrace();
-        LOGGER.warn("Invalid Invocation, Expected method doesn't exist: getFailuresWithMessagingException");
-      }
-
       for (Entry<String, Pair<Error, EventProcessingException>> entry : detailedFailures.entrySet()) {
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
         MuleException muleException = entry.getValue().getSecond();

@@ -68,7 +68,7 @@ public final class RoutingResult {
     return failedRoutesErrorMap;
   }
 
-  // todo: pair -> either
+  // todo: change data structure: pair -> either
   public Map<String, Pair<Error, EventProcessingException>> getFailuresWithException() {
     return failedRoutesErrorExceptionMap;
   }
