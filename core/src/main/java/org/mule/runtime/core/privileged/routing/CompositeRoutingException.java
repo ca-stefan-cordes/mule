@@ -44,7 +44,8 @@ import org.slf4j.LoggerFactory;
  */
 public final class CompositeRoutingException extends MuleException implements ComposedErrorException, ErrorMessageAwareException {
 
-  private static final String MESSAGE_TITLE = "Exception(s) were found for route(s): ";
+  private static final String MESSAGE_TITLE = "Error(s) were found for route(s): ";
+  private static final String MESSAGE_SUB_TITLE = "Detailed errors for route(s): "; // todo: update options
 
   private static final long serialVersionUID = -4421728527040579605L;
 
@@ -64,7 +65,8 @@ public final class CompositeRoutingException extends MuleException implements Co
   @Override
   public String getDetailedMessage() {
     StringBuilder builder = new StringBuilder();
-    builder.append(MESSAGE_TITLE).append(lineSeparator());
+    builder.append(super.getDetailedMessage());
+    builder.append(lineSeparator()).append(MESSAGE_SUB_TITLE).append(lineSeparator());
 
     Method getDetailedFailuresMethod = null;
     Map<String, Pair<Error, EventProcessingException>> detailedFailures = null;
@@ -76,7 +78,7 @@ public final class CompositeRoutingException extends MuleException implements Co
       e.printStackTrace();
       LOGGER.warn("Invalid Invocation, Expected method doesn't exist: getFailuresWithMessagingException");
     }
-    //todo: refactor
+    // todo: refactor
     if (detailedFailures.isEmpty()) {
       // Process with original logic
       for (Entry<String, Error> entry : routingResult.getFailures().entrySet()) {
