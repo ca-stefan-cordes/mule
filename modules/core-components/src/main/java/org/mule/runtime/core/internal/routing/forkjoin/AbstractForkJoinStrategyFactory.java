@@ -228,7 +228,7 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
         successMap.put(key, eventMessagingExceptionPair.getFirst().getMessage());
       }
     }
-    return new CompositeRoutingException(RoutingResult.routingResultFromDetailedException(successMap, errorMap));
+    return new CompositeRoutingException(RoutingResult.routingResultWithException(successMap, errorMap));
 
   }
 

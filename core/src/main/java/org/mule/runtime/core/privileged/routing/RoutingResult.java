@@ -18,6 +18,7 @@ import org.mule.runtime.core.privileged.exception.EventProcessingException;
 import org.mule.runtime.core.privileged.processor.chain.MessageProcessorChain;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * The result of routing an {@link CoreEvent} to {@code n} {@link MessageProcessorChain} routes, or {@code n} {@link CoreEvent}'s
@@ -40,8 +41,8 @@ public final class RoutingResult {
     this.failedRoutesErrorExceptionMap = emptyMap();
   }
 
-  public static RoutingResult routingResultFromDetailedException(Map<String, Message> successfulRoutesResultMap,
-                                                                 Map<String, Pair<Error, EventProcessingException>> failedRoutesErrorExceptionMap) {
+  public static RoutingResult routingResultWithException(Map<String, Message> successfulRoutesResultMap,
+                                                         Map<String, Pair<Error, EventProcessingException>> failedRoutesErrorExceptionMap) {
     RoutingResult routingResult = new RoutingResult(successfulRoutesResultMap, emptyMap());
     routingResult.setFailedRoutesErrorExceptionMap(failedRoutesErrorExceptionMap);
     return routingResult;
@@ -56,19 +57,19 @@ public final class RoutingResult {
   }
 
   public Map<String, Error> getFailures() {
+    // return a map that is not empty using the return type Map<String, Error>
     if (!failedRoutesErrorMap.isEmpty()) {
       return failedRoutesErrorMap;
     }
     if (!failedRoutesErrorExceptionMap.isEmpty()) {
-      // modify //todo: getFailures : return non-empty map by converting the result of existing map(complete this logic)
-      // return failedRoutesErrorExceptionMap.entrySet().stream().map(x -> x.getKey(), ) failedRoutesErrorExceptionMap; //after
-      // modification
+      return failedRoutesErrorExceptionMap.entrySet().stream()
+          .collect(Collectors.toMap(Map.Entry::getKey, pair -> pair.getValue().getFirst()));
     }
     return failedRoutesErrorMap;
   }
 
-  // todo:  pair -> either
-  public Map<String, Pair<Error, EventProcessingException>> getFailuresWithMessagingException() {
+  // todo: pair -> either
+  public Map<String, Pair<Error, EventProcessingException>> getFailuresWithException() {
     return failedRoutesErrorExceptionMap;
   }
 

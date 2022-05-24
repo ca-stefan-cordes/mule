@@ -66,7 +66,7 @@ public final class CompositeRoutingException extends MuleException implements Co
     StringBuilder builder = new StringBuilder();
     builder.append(MESSAGE_TITLE).append(lineSeparator());
 
-    if (!routingResult.getFailures().isEmpty()) { //todo: refactor
+    if (!routingResult.getFailures().isEmpty()) { // todo: refactor
       // Process with original logic
       for (Entry<String, Error> entry : routingResult.getFailures().entrySet()) {
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
@@ -83,7 +83,7 @@ public final class CompositeRoutingException extends MuleException implements Co
       Method getDetailedFailuresMethod = null;
       Map<String, Pair<Error, EventProcessingException>> detailedFailures = null;
       try {
-        getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithMessagingException");
+        getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithException");
         detailedFailures =
             (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
       } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
@@ -121,7 +121,7 @@ public final class CompositeRoutingException extends MuleException implements Co
       return routingResult.getFailures().values().stream().collect(toList());
     } else {
       // New logic
-      return routingResult.getFailuresWithMessagingException().values().stream().map(pair -> pair.getFirst()).collect(toList());
+      return routingResult.getFailuresWithException().values().stream().map(pair -> pair.getFirst()).collect(toList());
     }
   }
 
