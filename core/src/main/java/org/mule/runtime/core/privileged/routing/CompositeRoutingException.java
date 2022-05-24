@@ -95,11 +95,8 @@ public final class CompositeRoutingException extends MuleException implements Co
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
         MuleException muleException = entry.getValue().getSecond();
 
-        // builder.append(routeSubtitle).append(muleException.getDetailedMessage());
         builder.append(lineSeparator());
         builder.append(routeSubtitle).append(muleException.getVerboseMessage());
-        // builder.append(routeSubtitle)
-        // .append("Caught exception in Exception Strategy: " + entry.getValue().getSecond().getCause().getMessage());
       }
     }
     return builder.toString();
