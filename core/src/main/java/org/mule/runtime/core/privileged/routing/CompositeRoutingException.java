@@ -93,11 +93,11 @@ public final class CompositeRoutingException extends MuleException implements Co
 
       for (Entry<String, Pair<Error, EventProcessingException>> entry : detailedFailures.entrySet()) {
         String routeSubtitle = String.format("Route %s: ", entry.getKey());
-        MuleException muleException = entry.getValue().getSecond().;
+        MuleException muleException = entry.getValue().getSecond();
 
         // builder.append(routeSubtitle).append(muleException.getDetailedMessage());
         builder.append(lineSeparator());
-        builder.append(routeSubtitle).append(muleException.getDetailedMessage());
+        builder.append(routeSubtitle).append(muleException.getVerboseMessage());
         // builder.append(routeSubtitle)
         // .append("Caught exception in Exception Strategy: " + entry.getValue().getSecond().getCause().getMessage());
       }
@@ -107,33 +107,12 @@ public final class CompositeRoutingException extends MuleException implements Co
 
   private static I18nMessage buildExceptionMessage(RoutingResult routingResult) {
     StringBuilder builder = new StringBuilder();
-    if (!routingResult.getFailures().isEmpty()) {
-      // Process with original logic
-      for (Entry<String, Error> routeResult : routingResult.getFailures().entrySet()) {
-        Throwable routeException = routeResult.getValue().getCause();
-        builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
-            .append(routeException.getClass().getName())
-            .append(": ").append(routeException.getMessage());
-      }
-    } else {
-      // New logic
-      Method getDetailedFailuresMethod = null;
-      Map<String, Pair<Error, EventProcessingException>> detailedFailures = null;
-      try {
-        getDetailedFailuresMethod = RoutingResult.class.getMethod("getFailuresWithMessagingException");
-        detailedFailures =
-            (Map<String, Pair<Error, EventProcessingException>>) getDetailedFailuresMethod.invoke(routingResult);
-      } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-        e.printStackTrace();
-        LOGGER.warn("Invalid Invocation, Expected method doesn't exist: getFailuresWithMessagingException");
-      }
-      for (Entry<String, Pair<Error, EventProcessingException>> routeResult : detailedFailures.entrySet()) {
-        Throwable routeException = routeResult.getValue().getSecond();
-        builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ")
-            .append(routeException.getClass().getName())
-            .append(": ").append(routeException.getMessage());
-      }
+    for (Entry<String, Error> routeResult : routingResult.getFailures().entrySet()) {
+      Throwable routeException = routeResult.getValue().getCause();
+      builder.append(lineSeparator() + "\t").append(routeResult.getKey()).append(": ").append(routeException.getClass().getName())
+          .append(": ").append(routeException.getMessage());
     }
+
     builder.insert(0, MESSAGE_TITLE);
     return I18nMessageFactory.createStaticMessage(builder.toString());
   }
