@@ -137,7 +137,7 @@ public class NoOpProfilingService implements InternalProfilingService, Privilege
     return eventTracer;
   }
 
-  private static class NoOpCoreEventTracer implements CoreEventTracer {
+  public static class NoOpCoreEventTracer implements CoreEventTracer {
 
     @Override
     public InternalSpan startComponentSpan(CoreEvent coreEvent, Component component) {
