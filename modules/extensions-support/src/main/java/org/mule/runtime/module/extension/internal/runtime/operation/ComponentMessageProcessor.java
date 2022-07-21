@@ -808,10 +808,6 @@ public abstract class ComponentMessageProcessor<T extends ComponentModel> extend
                                                 isTargetWithPolicies(event) ? valueReturnDelegate : returnDelegate));
     } finally {
       unsetCurrentLocation(wasProcessorPathSet);
-      EventContext eventContext = event.getContext();
-      if (eventContext instanceof DistributedTraceContextAware) {
-        ((DistributedTraceContextAware) eventContext).getDistributedTraceContext().endCurrentContextSpan();
-      }
     }
   }
 

@@ -182,7 +182,7 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
                                                       applyProcessingStrategy(processingStrategy, route, maxConcurrency),
                                                       empty(),
                                                       (coreEvent -> coreEventTracer
-                                                          .startComponentSpan(coreEvent, component, ROUTE_SPAN_CUSTOMIZER))))
+                                                          .endCurrentSpan(coreEvent))))
                                                               .timeout(ofMillis(timeout),
                                                                        onTimeout(processingStrategy, delayErrors,
                                                                                  timeoutErrorType,
