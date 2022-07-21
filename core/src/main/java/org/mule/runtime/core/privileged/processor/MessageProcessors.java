@@ -19,6 +19,7 @@ import static org.mule.runtime.core.api.rx.Exceptions.unwrap;
 import static org.mule.runtime.core.internal.event.DefaultEventContext.child;
 import static org.mule.runtime.core.internal.event.EventQuickCopy.quickCopy;
 import static org.mule.runtime.core.internal.util.rx.RxUtils.subscribeFluxOnPublisherSubscription;
+
 import static reactor.core.publisher.Mono.from;
 import static reactor.core.publisher.Mono.just;
 import static reactor.core.publisher.Mono.subscriberContext;
@@ -294,6 +295,13 @@ public class MessageProcessors {
     return internalProcessWithChildContext(quickCopy(childContext, event), processor, true, true);
   }
 
+  public static Publisher<CoreEvent> processWithChildContextDontComplete(CoreEvent event, ReactiveProcessor processor,
+                                                                         Optional<ComponentLocation> componentLocation,
+                                                                         Consumer<CoreEvent> coreEventConsumer) {
+    BaseEventContext childContext = newChildContext(event, componentLocation);
+    return internalProcessWithChildContext(quickCopy(childContext, event), processor, true, true, coreEventConsumer);
+  }
+
   /**
    * Creates a new {@link BaseEventContext} which is child of the one in the given {@code event}
    * <p>
@@ -444,11 +452,19 @@ public class MessageProcessors {
   private static Publisher<CoreEvent> internalProcessWithChildContext(CoreEvent eventChildCtx,
                                                                       ReactiveProcessor processor,
                                                                       boolean completeParentIfEmpty, boolean propagateErrors) {
+    return internalProcessWithChildContext(eventChildCtx, processor, completeParentIfEmpty, propagateErrors, (event) -> {
+    });
+  }
+
+  private static Publisher<CoreEvent> internalProcessWithChildContext(CoreEvent eventChildCtx,
+                                                                      ReactiveProcessor processor,
+                                                                      boolean completeParentIfEmpty, boolean propagateErrors,
+                                                                      Consumer<CoreEvent> eventContextConsumer) {
     MonoSinkRecorder<Either<MessagingException, CoreEvent>> errorSwitchSinkSinkRef = new MonoSinkRecorder<>();
 
     return Mono.<CoreEvent>create(sink -> {
       childContextResponseHandler(eventChildCtx, new MonoSinkRecorderToReactorSinkAdapter<>(errorSwitchSinkSinkRef),
-                                  completeParentIfEmpty, propagateErrors);
+                                  completeParentIfEmpty, propagateErrors, eventContextConsumer);
 
       sink.success(eventChildCtx);
     })
@@ -520,8 +536,17 @@ public class MessageProcessors {
   private static void childContextResponseHandler(CoreEvent eventChildCtx,
                                                   SinkRecorderToReactorSinkAdapter<Either<MessagingException, CoreEvent>> errorSwitchSinkSinkRef,
                                                   boolean completeParentIfEmpty, boolean propagateErrors) {
+    childContextResponseHandler(eventChildCtx, errorSwitchSinkSinkRef, completeParentIfEmpty, propagateErrors, (eventContext) -> {
+    });
+  }
+
+  private static void childContextResponseHandler(CoreEvent eventChildCtx,
+                                                  SinkRecorderToReactorSinkAdapter<Either<MessagingException, CoreEvent>> errorSwitchSinkSinkRef,
+                                                  boolean completeParentIfEmpty, boolean propagateErrors,
+                                                  Consumer<CoreEvent> eventContextConsumer) {
     ((BaseEventContext) eventChildCtx.getContext()).onResponse((response, throwable) -> {
       try {
+        eventContextConsumer.accept(eventChildCtx);
         if (throwable != null) {
           MessagingException error = (MessagingException) throwable;
 

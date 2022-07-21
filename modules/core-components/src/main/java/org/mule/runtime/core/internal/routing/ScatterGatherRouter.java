@@ -16,6 +16,7 @@ import org.mule.runtime.api.exception.MuleException;
 import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.api.message.Message;
 import org.mule.runtime.core.api.event.CoreEvent;
+import org.mule.runtime.core.internal.profiling.InternalProfilingService;
 import org.mule.runtime.core.internal.routing.forkjoin.CollectMapForkJoinStrategyFactory;
 import org.mule.runtime.core.privileged.processor.Router;
 import org.mule.runtime.core.privileged.processor.chain.MessageProcessorChain;
@@ -24,6 +25,8 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import org.reactivestreams.Publisher;
+
+import javax.inject.Inject;
 
 /**
  * <p>
@@ -41,6 +44,9 @@ import org.reactivestreams.Publisher;
 public class ScatterGatherRouter extends AbstractForkJoinRouter implements Router {
 
   private List<MessageProcessorChain> routes = emptyList();
+
+  @Inject
+  private InternalProfilingService profilingService;
 
   @Override
   protected Consumer<CoreEvent> onEvent() {
@@ -73,7 +79,7 @@ public class ScatterGatherRouter extends AbstractForkJoinRouter implements Route
 
   @Override
   protected ForkJoinStrategyFactory getDefaultForkJoinStrategyFactory() {
-    return new CollectMapForkJoinStrategyFactory();
+    return new CollectMapForkJoinStrategyFactory(profilingService.getCoreEventTracer(), this);
   }
 
   /**

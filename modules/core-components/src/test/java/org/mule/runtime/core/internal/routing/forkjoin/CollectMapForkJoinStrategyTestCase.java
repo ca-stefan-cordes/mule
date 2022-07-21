@@ -11,13 +11,19 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mule.runtime.api.message.Message.of;
 import static org.mule.runtime.api.util.MuleSystemProperties.MULE_PRINT_DETAILED_COMPOSITE_EXCEPTION_LOG_PROPERTY;
 import static org.mule.test.allure.AllureConstants.ForkJoinStrategiesFeature.ForkJoinStrategiesStory.COLLECT_MAP;
 
+import org.mule.runtime.api.component.Component;
 import org.mule.runtime.api.message.Message;
 import org.mule.runtime.core.api.event.CoreEvent;
 import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
+import org.mule.runtime.core.internal.profiling.InternalSpan;
+import org.mule.runtime.core.internal.profiling.NoOpProfilingService;
+import org.mule.runtime.core.internal.profiling.tracing.event.span.CoreEventSpanCustomizer;
+import org.mule.runtime.core.internal.profiling.tracing.event.tracer.CoreEventTracer;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategy;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategy.RoutingPair;
 import org.mule.tck.junit4.rule.SystemProperty;
@@ -56,9 +62,26 @@ public class CollectMapForkJoinStrategyTestCase extends AbstractForkJoinStrategy
   protected ForkJoinStrategy createStrategy(ProcessingStrategy processingStrategy, int concurrency, boolean delayErrors,
                                             long timeout) {
     boolean isDetailedLogEnabled = Boolean.parseBoolean(detailedCompositeRoutingExceptionLog.getValue());
-    return new CollectMapForkJoinStrategyFactory().createForkJoinStrategy(processingStrategy, concurrency, delayErrors, timeout,
-                                                                          scheduler,
-                                                                          timeoutErrorType, isDetailedLogEnabled);
+    return new CollectMapForkJoinStrategyFactory(new CoreEventTracer() {
+
+      @Override
+      public InternalSpan startComponentSpan(CoreEvent coreEvent, Component component) {
+        return null;
+      }
+
+      @Override
+      public InternalSpan startComponentSpan(CoreEvent coreEvent, Component component,
+                                             CoreEventSpanCustomizer coreEventSpanCustomizer) {
+        return null;
+      }
+
+      @Override
+      public void endCurrentSpan(CoreEvent coreEvent) {
+
+      }
+    }, mock(Component.class)).createForkJoinStrategy(processingStrategy, concurrency, delayErrors, timeout,
+                                                     scheduler,
+                                                     timeoutErrorType, isDetailedLogEnabled);
   }
 
   @Test

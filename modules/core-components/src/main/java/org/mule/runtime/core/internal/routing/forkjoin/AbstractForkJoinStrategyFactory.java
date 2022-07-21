@@ -13,6 +13,7 @@ import static java.util.stream.Collectors.toList;
 
 import static org.mule.runtime.core.api.event.CoreEvent.builder;
 import static org.mule.runtime.core.internal.exception.ErrorHandlerContextManager.ERROR_HANDLER_CONTEXT;
+import static org.mule.runtime.core.internal.profiling.tracing.event.span.CoreEventSpanUtils.getSpanName;
 import static org.mule.runtime.core.internal.routing.ForkJoinStrategy.RoutingPair.of;
 import static org.mule.runtime.core.privileged.processor.MessageProcessors.processWithChildContextDontComplete;
 import static reactor.core.Exceptions.propagate;
@@ -21,6 +22,7 @@ import static reactor.core.publisher.Mono.defer;
 import static reactor.core.publisher.Mono.error;
 import static reactor.core.publisher.Mono.just;
 
+import org.mule.runtime.api.component.Component;
 import org.mule.runtime.api.message.Error;
 import org.mule.runtime.api.message.ErrorType;
 import org.mule.runtime.api.message.Message;
@@ -36,6 +38,9 @@ import org.mule.runtime.core.api.processor.strategy.ProcessingStrategy;
 import org.mule.runtime.core.internal.event.DefaultEventBuilder;
 import org.mule.runtime.core.internal.exception.MessagingException;
 import org.mule.runtime.core.internal.message.ErrorBuilder;
+import org.mule.runtime.core.internal.profiling.NoOpProfilingService;
+import org.mule.runtime.core.internal.profiling.tracing.event.span.CoreEventSpanCustomizer;
+import org.mule.runtime.core.internal.profiling.tracing.event.tracer.CoreEventTracer;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategy;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategy.RoutingPair;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategyFactory;
@@ -74,7 +79,10 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
 
   public static final String TIMEOUT_EXCEPTION_DESCRIPTION = "Route Timeout";
   public static final String TIMEOUT_EXCEPTION_DETAILED_DESCRIPTION_PREFIX = "Timeout while processing route/part:";
+  private static final CoreEventSpanCustomizer ROUTE_SPAN_CUSTOMIZER = new RouteSpanCustomizer();
   private final boolean mergeVariables;
+  private CoreEventTracer coreEventTracer = new NoOpProfilingService.NoOpCoreEventTracer();
+  private Component component;
 
   public AbstractForkJoinStrategyFactory() {
     this(true);
@@ -82,6 +90,12 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
 
   public AbstractForkJoinStrategyFactory(boolean mergeVariables) {
     this.mergeVariables = mergeVariables;
+  }
+
+  public AbstractForkJoinStrategyFactory(CoreEventTracer coreEventTracer, Component component) {
+    this(true);
+    this.coreEventTracer = coreEventTracer;
+    this.component = component;
   }
 
   @Override
@@ -95,7 +109,7 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
       return from(routingPairs)
           .map(addSequence(count))
           .flatMapSequential(processRoutePair(processingStrategy, maxConcurrency, delayErrors, timeout, reactorTimeoutScheduler,
-                                              timeoutErrorType),
+                                              timeoutErrorType, coreEventTracer),
                              maxConcurrency)
           .reduce(new Pair<List<Pair<CoreEvent, EventProcessingException>>, Boolean>(new ArrayList<>(), false),
                   (listBooleanPair, coreEventExceptionPair) -> {
@@ -156,26 +170,36 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
                                                                                                        boolean delayErrors,
                                                                                                        long timeout,
                                                                                                        reactor.core.scheduler.Scheduler timeoutScheduler,
-                                                                                                       ErrorType timeoutErrorType) {
+                                                                                                       ErrorType timeoutErrorType,
+                                                                                                       CoreEventTracer coreEventTracer) {
 
     return pair -> {
       ReactiveProcessor route = publisher -> from(publisher)
+          .doOnNext(coreEvent -> coreEventTracer
+              .startComponentSpan(coreEvent, component, new RouteSpanCustomizer()))
           .transform(pair.getRoute());
       return from(processWithChildContextDontComplete(pair.getEvent(),
                                                       applyProcessingStrategy(processingStrategy, route, maxConcurrency),
-                                                      empty()))
-                                                          .timeout(ofMillis(timeout),
-                                                                   onTimeout(processingStrategy, delayErrors, timeoutErrorType,
-                                                                             pair),
-                                                                   timeoutScheduler)
-                                                          .map(coreEvent -> new Pair<CoreEvent, EventProcessingException>(
-                                                                                                                          ((DefaultEventBuilder) CoreEvent
-                                                                                                                              .builder(coreEvent))
-                                                                                                                                  .removeInternalParameter(ERROR_HANDLER_CONTEXT)
-                                                                                                                                  .build(),
-                                                                                                                          null))
-                                                          .onErrorResume(MessagingException.class,
-                                                                         me -> getPublisher(delayErrors, me));
+                                                      empty(),
+                                                      (coreEvent -> coreEventTracer
+                                                          .startComponentSpan(coreEvent, component, ROUTE_SPAN_CUSTOMIZER))))
+                                                              .timeout(ofMillis(timeout),
+                                                                       onTimeout(processingStrategy, delayErrors,
+                                                                                 timeoutErrorType,
+                                                                                 pair),
+                                                                       timeoutScheduler)
+                                                              .map(coreEvent -> new Pair<CoreEvent, EventProcessingException>(
+                                                                                                                              ((DefaultEventBuilder) CoreEvent
+                                                                                                                                  .builder(coreEvent))
+                                                                                                                                      .removeInternalParameter(ERROR_HANDLER_CONTEXT)
+                                                                                                                                      .build(),
+                                                                                                                              null))
+                                                              .onErrorResume(MessagingException.class,
+                                                                             me -> {
+                                                                               coreEventTracer
+                                                                                   .endCurrentSpan(me.getEvent());
+                                                                               return getPublisher(delayErrors, me);
+                                                                             });
     };
   }
 
@@ -279,4 +303,16 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
     };
   }
 
+  /**
+   * A {@link CoreEventSpanCustomizer} for routes.
+   */
+  private static class RouteSpanCustomizer implements CoreEventSpanCustomizer {
+
+    public static final String ROUTE = ":route";
+
+    @Override
+    public String getName(CoreEvent coreEvent, Component component) {
+      return getSpanName(component.getIdentifier()) + ROUTE;
+    }
+  }
 }

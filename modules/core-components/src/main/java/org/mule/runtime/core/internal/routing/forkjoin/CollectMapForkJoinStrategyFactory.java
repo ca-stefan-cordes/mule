@@ -11,8 +11,10 @@ import static java.util.stream.Collectors.toMap;
 import static org.mule.runtime.api.message.Message.of;
 import static org.mule.runtime.api.metadata.DataType.MULE_MESSAGE_MAP;
 
+import org.mule.runtime.api.component.Component;
 import org.mule.runtime.api.metadata.DataType;
 import org.mule.runtime.core.api.event.CoreEvent;
+import org.mule.runtime.core.internal.profiling.tracing.event.tracer.CoreEventTracer;
 import org.mule.runtime.core.internal.routing.ForkJoinStrategy;
 
 import java.util.LinkedHashMap;
@@ -33,6 +35,10 @@ import java.util.function.Function;
  * </ul>
  */
 public class CollectMapForkJoinStrategyFactory extends AbstractForkJoinStrategyFactory {
+
+  public CollectMapForkJoinStrategyFactory(CoreEventTracer coreEventTracer, Component component) {
+    super(coreEventTracer, component);
+  }
 
   @Override
   protected Function<List<CoreEvent>, CoreEvent> createResultEvent(CoreEvent original,

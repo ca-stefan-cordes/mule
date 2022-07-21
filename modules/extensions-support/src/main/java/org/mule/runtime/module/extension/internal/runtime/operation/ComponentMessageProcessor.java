@@ -99,6 +99,8 @@ import org.mule.runtime.core.internal.policy.OperationPolicy;
 import org.mule.runtime.core.internal.policy.PolicyManager;
 import org.mule.runtime.core.internal.processor.ParametersResolverProcessor;
 import org.mule.runtime.core.internal.processor.strategy.ComponentInnerProcessor;
+import org.mule.runtime.core.internal.profiling.InternalProfilingService;
+import org.mule.runtime.core.internal.profiling.tracing.event.tracer.CoreEventTracer;
 import org.mule.runtime.core.internal.rx.FluxSinkRecorder;
 import org.mule.runtime.core.internal.util.rx.FluxSinkSupplier;
 import org.mule.runtime.core.internal.util.rx.RxUtils;
@@ -239,7 +241,7 @@ public abstract class ComponentMessageProcessor<T extends ComponentModel> extend
   private ExtensionConnectionSupplier extensionConnectionSupplier;
 
   @Inject
-  private ProfilingService profilingService;
+  private InternalProfilingService profilingService;
 
   private Function<Optional<ConfigurationInstance>, RetryPolicyTemplate> retryPolicyResolver;
   private String resolvedProcessorRepresentation;
@@ -263,6 +265,7 @@ public abstract class ComponentMessageProcessor<T extends ComponentModel> extend
   private ReturnDelegate valueReturnDelegate;
   private String processorPath = null;
   private FeatureUser featureUser;
+  private CoreEventTracer coreEventTracer;
 
   public ComponentMessageProcessor(ExtensionModel extensionModel,
                                    T componentModel,
@@ -382,6 +385,7 @@ public abstract class ComponentMessageProcessor<T extends ComponentModel> extend
                   // if `sink.error` is called here, it will cancel the flux altogether.
                   // That's why an `Either` is used here,
                   // so the error can be propagated afterwards in a way consistent with our expected error handling.
+                  coreEventTracer.endCurrentSpan(event);
                   errorSwitchSinkSinkRef.next(left(
                                                    // Force the error mapper from the chain to be used.
                                                    // When using Mono.create with sink.error, the error mapper from the
@@ -605,6 +609,7 @@ public abstract class ComponentMessageProcessor<T extends ComponentModel> extend
       initialiseIfNeeded(resolverSet, muleContext);
       componentExecutor = createComponentExecutor();
       executionMediator = createExecutionMediator();
+      coreEventTracer = profilingService.getCoreEventTracer();
       initialiseIfNeeded(componentExecutor, true, muleContext);
 
       ComponentLocation componentLocation = getLocation();
