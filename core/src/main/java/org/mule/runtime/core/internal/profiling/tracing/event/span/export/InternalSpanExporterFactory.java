@@ -25,9 +25,4 @@ public interface InternalSpanExporterFactory<T> {
    * @return the result exporter.
    */
   InternalSpanExporter from(T context, InternalSpan internalSpan);
-
-  /**
-   * @return returns a {@link ExportedSpanCapturer}.
-   */
-  ExportedSpanCapturer getExportedSpanCapturer();
 }
