@@ -121,6 +121,7 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
                     return new Pair<>(listBooleanPair.getFirst(), listBooleanPair.getSecond() || hasNewError);
                   })
           .doOnNext(listBooleanPair -> {
+            coreEventTracer.endCurrentSpan(listBooleanPair.getFirst().get(0).getFirst());
             if (listBooleanPair.getSecond()) {
               throw propagate(createCompositeRoutingException(listBooleanPair.getFirst().stream()
                   .map(coreEventExceptionPair -> removeOriginalError(coreEventExceptionPair,
@@ -196,8 +197,8 @@ public abstract class AbstractForkJoinStrategyFactory implements ForkJoinStrateg
                                                                                                                               null))
                                                               .onErrorResume(MessagingException.class,
                                                                              me -> {
-                                                                               coreEventTracer
-                                                                                   .endCurrentSpan(me.getEvent());
+                                                                               // coreEventTracer
+                                                                               // .endCurrentSpan(me.getEvent());
                                                                                return getPublisher(delayErrors, me);
                                                                              });
     };
