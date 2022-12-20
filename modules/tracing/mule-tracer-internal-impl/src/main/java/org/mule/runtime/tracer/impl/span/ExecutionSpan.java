@@ -21,6 +21,7 @@ import org.mule.runtime.tracer.api.span.error.InternalSpanError;
 import org.mule.runtime.tracer.api.span.info.InitialSpanInfo;
 import org.mule.runtime.tracer.api.span.exporter.SpanExporter;
 import org.mule.runtime.tracer.exporter.api.SpanExporterFactory;
+import org.mule.runtime.tracer.impl.span.factory.ExecutionSpanFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,24 +37,48 @@ import java.util.Set;
 public class ExecutionSpan implements InternalSpan {
 
   public static final String THREAD_END_NAME = "thread.end.name";
-  private final InitialSpanInfo initialSpanInfo;
+  private InitialSpanInfo initialSpanInfo;
   private SpanExporter spanExporter = NOOP_EXPORTER;
 
   public static ExecutionSpanBuilder getExecutionSpanBuilder() {
     return new ExecutionSpanBuilder();
   }
 
-  private final InternalSpan parent;
-  private final Long startTime;
+  private InternalSpan parent;
+
+  private Long startTime;
   private Long endTime;
   private final Map<String, String> attributes = new HashMap<>();
   private final Set<SpanError> errors = new HashSet<>();
+  private ExecutionSpanFactory executionSpanFactory;
+
+  public ExecutionSpan() {}
 
   private ExecutionSpan(InitialSpanInfo initialSpanInfo, Long startTime,
                         InternalSpan parent) {
     this.initialSpanInfo = initialSpanInfo;
     this.startTime = startTime;
     this.parent = parent;
+  }
+
+  public void setSpanExporter(SpanExporter spanExporter) {
+    this.spanExporter = spanExporter;
+  }
+
+  public void setStartTime(Long startTime) {
+    this.startTime = startTime;
+  }
+
+  public void setInitialSpanInfo(InitialSpanInfo initialSpanInfo) {
+    this.initialSpanInfo = initialSpanInfo;
+  }
+
+  public void setParent(InternalSpan parent) {
+    this.parent = parent;
+  }
+
+  public void setExecutionSpanFactory(ExecutionSpanFactory executionSpanFactory) {
+    this.executionSpanFactory = executionSpanFactory;
   }
 
   @Override
@@ -101,6 +126,9 @@ public class ExecutionSpan implements InternalSpan {
     this.attributes.put(THREAD_END_NAME, currentThread().getName());
     this.endTime = getDefault().now();
     this.spanExporter.export();
+    if (executionSpanFactory != null) {
+      executionSpanFactory.returnSpanToPool(this);
+    }
   }
 
   @Override
