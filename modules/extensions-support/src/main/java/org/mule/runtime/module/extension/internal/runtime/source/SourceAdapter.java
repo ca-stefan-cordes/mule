@@ -61,6 +61,7 @@ import org.mule.runtime.core.api.execution.ExceptionContextProvider;
 import org.mule.runtime.core.api.streaming.CursorProviderFactory;
 import org.mule.runtime.core.api.streaming.StreamingManager;
 import org.mule.runtime.core.internal.exception.MessagingException;
+import org.mule.runtime.core.internal.profiling.InternalProfilingService;
 import org.mule.runtime.core.internal.util.MessagingExceptionResolver;
 import org.mule.runtime.core.privileged.event.BaseEventContext;
 import org.mule.runtime.core.privileged.exception.ErrorTypeLocator;
@@ -74,6 +75,7 @@ import org.mule.runtime.module.extension.internal.loader.java.property.Declaring
 import org.mule.runtime.module.extension.internal.loader.java.property.SourceCallbackModelProperty;
 import org.mule.runtime.module.extension.internal.runtime.connectivity.ReactiveReconnectionCallback;
 import org.mule.runtime.module.extension.internal.runtime.connectivity.SdkReconnectableAdapter;
+import org.mule.runtime.module.extension.internal.runtime.parameter.PropagateAllDistributedTraceContextManager;
 import org.mule.runtime.module.extension.internal.runtime.resolver.ResolverSet;
 import org.mule.runtime.module.extension.internal.runtime.resolver.ResolverSetResult;
 import org.mule.runtime.module.extension.internal.runtime.resolver.ValueResolver;
@@ -82,6 +84,7 @@ import org.mule.runtime.module.extension.internal.runtime.source.legacy.LegacySo
 import org.mule.runtime.module.extension.internal.runtime.source.legacy.SourceTransactionalActionUtils;
 import org.mule.runtime.module.extension.internal.runtime.source.poll.RestartContext;
 import org.mule.runtime.module.extension.internal.runtime.source.poll.Restartable;
+import org.mule.runtime.module.extension.internal.runtime.source.trace.SourceDistributedSourceTraceContext;
 import org.mule.runtime.module.extension.internal.util.FieldSetter;
 import org.mule.sdk.api.runtime.connectivity.Reconnectable;
 import org.mule.sdk.api.runtime.source.Source;
@@ -151,6 +154,9 @@ public class SourceAdapter implements Lifecycle, Restartable {
 
   @Inject
   private MuleContext muleContext;
+
+  @Inject
+  private InternalProfilingService internalProfilingService;
 
   public SourceAdapter(ExtensionModel extensionModel, SourceModel sourceModel,
                        Source source,
@@ -334,6 +340,10 @@ public class SourceAdapter implements Lifecycle, Restartable {
     @Override
     public void onFailure(MessagingException exception, Map<String, Object> parameters, CompletableCallback<Void> callback) {
       final CoreEvent event = exception.getEvent();
+      if (context.getDistributedSourceTraceContext() instanceof SourceDistributedSourceTraceContext) {
+        ((SourceDistributedSourceTraceContext) context.getDistributedSourceTraceContext())
+            .delegateTo(event, internalProfilingService.getCoreEventTracer());
+      }
       final boolean isBackPressureError = event.getError()
           .map(e -> flowBackPressueErrorType.equals(e.getErrorType()))
           .orElse(false);

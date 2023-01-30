@@ -9,6 +9,9 @@ package org.mule.runtime.module.extension.internal.runtime.source.trace;
 
 import static java.util.Collections.emptyMap;
 
+import org.mule.runtime.core.api.event.CoreEvent;
+import org.mule.runtime.module.extension.internal.runtime.parameter.PropagateAllDistributedTraceContextManager;
+import org.mule.runtime.tracer.api.EventTracer;
 import org.mule.sdk.api.runtime.source.DistributedTraceContextManager;
 
 import java.util.HashMap;
@@ -24,6 +27,7 @@ public class SourceDistributedSourceTraceContext implements DistributedTraceCont
   private Map<String, String> remoteTraceContextMap = emptyMap();
   private String name;
   private Map<String, String> attributes = new HashMap<>();
+  private DistributedTraceContextManager delegate;
 
   @Override
   public void setRemoteTraceContextMap(Map<String, String> remoteTraceContextMap) {
@@ -42,6 +46,9 @@ public class SourceDistributedSourceTraceContext implements DistributedTraceCont
 
   @Override
   public void addCurrentSpanAttribute(String key, String value) {
+    if (delegate != null) {
+      delegate.addCurrentSpanAttribute(key, value);
+    }
     attributes.put(key, value);
   }
 
@@ -56,5 +63,9 @@ public class SourceDistributedSourceTraceContext implements DistributedTraceCont
 
   public String getSpanName() {
     return name;
+  }
+
+  public void delegateTo(CoreEvent coreEvent, EventTracer<CoreEvent> coreEventTracer) {
+    this.delegate = new PropagateAllDistributedTraceContextManager(coreEvent, coreEventTracer);
   }
 }
