@@ -334,6 +334,10 @@ public class SourceAdapter implements Lifecycle, Restartable {
       if (context.getTransactionHandle().isTransacted()) {
         callback = callback.before(v -> commit());
       }
+      if (context.getDistributedSourceTraceContext() instanceof SourceDistributedSourceTraceContext) {
+        ((SourceDistributedSourceTraceContext) context.getDistributedSourceTraceContext())
+            .delegateTo(event, internalProfilingService.getCoreEventTracer());
+      }
       onSuccessExecutor.execute(event, parameters, context, callback);
     }
 
