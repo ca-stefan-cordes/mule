@@ -9,30 +9,17 @@ package org.mule.runtime.module.artifact.activation.internal.maven;
 import static org.mule.maven.client.api.MavenClientProvider.discoverProvider;
 import static org.mule.maven.client.api.model.BundleScope.SYSTEM;
 import static org.mule.maven.client.api.model.MavenConfiguration.newMavenConfigurationBuilder;
-import static org.mule.maven.client.internal.util.MavenUtils.getPomModelFromFile;
 import static org.mule.runtime.api.util.Preconditions.checkArgument;
 import static org.mule.runtime.globalconfig.api.maven.MavenClientFactory.createMavenClient;
 import static org.mule.runtime.module.artifact.activation.internal.classloader.model.utils.ArtifactUtils.getDeployableArtifactCoordinates;
 import static org.mule.runtime.module.artifact.activation.internal.classloader.model.utils.ArtifactUtils.toApplicationModelArtifacts;
 import static org.mule.runtime.module.artifact.activation.internal.classloader.model.utils.ArtifactUtils.updateArtifactsSharedState;
 import static org.mule.runtime.module.artifact.activation.internal.classloader.model.utils.ArtifactUtils.updatePackagesResources;
-import static org.mule.runtime.module.artifact.api.classloader.MuleExtensionsMavenPlugin.MULE_EXTENSIONS_PLUGIN_ARTIFACT_ID;
-import static org.mule.runtime.module.artifact.api.classloader.MuleExtensionsMavenPlugin.MULE_EXTENSIONS_PLUGIN_GROUP_ID;
-import static org.mule.runtime.module.artifact.api.classloader.MuleMavenPlugin.MULE_MAVEN_PLUGIN_ARTIFACT_ID;
-import static org.mule.runtime.module.artifact.api.classloader.MuleMavenPlugin.MULE_MAVEN_PLUGIN_GROUP_ID;
 import static org.mule.runtime.module.artifact.api.descriptor.ArtifactConstants.getApiClassifiers;
 import static org.mule.runtime.module.artifact.api.descriptor.BundleDescriptor.MULE_PLUGIN_CLASSIFIER;
-import static org.mule.tools.api.classloader.Constants.ADDITIONAL_PLUGIN_DEPENDENCIES_FIELD;
-import static org.mule.tools.api.classloader.Constants.PLUGIN_DEPENDENCIES_FIELD;
-import static org.mule.tools.api.classloader.Constants.PLUGIN_DEPENDENCY_FIELD;
-import static org.mule.tools.api.classloader.Constants.PLUGIN_FIELD;
-import static org.mule.tools.api.classloader.model.ArtifactCoordinates.DEFAULT_ARTIFACT_TYPE;
 
-import static java.lang.Math.random;
 import static java.lang.String.format;
-import static java.nio.file.Files.createTempDirectory;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
@@ -40,19 +27,20 @@ import static java.util.Optional.of;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
-import static java.util.stream.Stream.concat;
 
 import static com.google.common.collect.Sets.newHashSet;
-import static org.apache.commons.io.FileUtils.deleteQuietly;
-import static org.codehaus.plexus.util.xml.Xpp3DomUtils.mergeXpp3Dom;
 
+import org.mule.maven.client.api.AdditionalPluginDependenciesResolver;
 import org.mule.maven.client.api.MavenClient;
 import org.mule.maven.client.api.MavenClientProvider;
 import org.mule.maven.client.api.MavenReactorResolver;
+import org.mule.maven.client.api.MuleSystemPluginMavenReactorResolver;
 import org.mule.maven.client.api.SettingsSupplierFactory;
-import org.mule.maven.client.api.model.BundleDependency;
 import org.mule.maven.client.api.model.MavenConfiguration;
-import org.mule.runtime.api.exception.MuleRuntimeException;
+import org.mule.maven.parser.api.BundleDependency;
+import org.mule.maven.parser.api.MavenParser;
+import org.mule.maven.parser.api.MavenPlugin;
+import org.mule.maven.parser.internal.MavenParserImpl;
 import org.mule.runtime.module.artifact.activation.api.deployable.DeployableProjectModel;
 import org.mule.runtime.module.artifact.activation.internal.deployable.AbstractDeployableProjectModelBuilder;
 import org.mule.runtime.module.artifact.activation.internal.deployable.DeployablePluginsDependenciesResolver;
@@ -62,7 +50,6 @@ import org.mule.tools.api.classloader.model.Artifact;
 import org.mule.tools.api.classloader.model.ArtifactCoordinates;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -73,13 +60,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Stream;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.maven.model.Build;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.model.Model;
-import org.codehaus.plexus.util.xml.Xpp3Dom;
 
 public abstract class AbstractMavenDeployableProjectModelBuilder extends AbstractDeployableProjectModelBuilder {
 
@@ -129,22 +109,22 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
   @Override
   public final DeployableProjectModel build() {
     File pom = getPomFromFolder(projectFolder);
-    Model pomModel = getPomModelFromFile(pom);
+    MavenParser parser = new MavenParserImpl.Builder().withPomFile(pom).build();
 
     deployableArtifactRepositoryFolder = this.mavenConfiguration.getLocalMavenRepositoryLocation();
 
-    ArtifactCoordinates deployableArtifactCoordinates = getDeployableProjectArtifactCoordinates(pomModel);
+    ArtifactCoordinates deployableArtifactCoordinates = getDeployableProjectArtifactCoordinates(parser);
 
     MavenClient mavenClient = createMavenClient(mavenConfiguration);
     List<String> activeProfiles = mavenConfiguration.getActiveProfiles().orElse(emptyList());
 
-    resolveDeployableDependencies(mavenClient, pom, pomModel, activeProfiles);
+    resolveDeployableDependencies(mavenClient, pom, parser, activeProfiles);
 
     resolveDeployablePluginsData(deployableMavenBundleDependencies);
 
-    resolveAdditionalPluginDependencies(mavenClient, pomModel, activeProfiles, pluginsArtifactDependencies);
+    resolveAdditionalPluginDependencies(mavenClient, parser, activeProfiles, pluginsArtifactDependencies);
 
-    return doBuild(pomModel, deployableArtifactCoordinates);
+    return doBuild(parser, deployableArtifactCoordinates);
   }
 
   /**
@@ -154,7 +134,7 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
    * @param deployableArtifactCoordinates artifact coordinates from the deployable.
    * @return the {@link DeployableProjectModel}.
    */
-  protected abstract DeployableProjectModel doBuild(Model pomModel, ArtifactCoordinates deployableArtifactCoordinates);
+  protected abstract DeployableProjectModel doBuild(MavenParser parser, ArtifactCoordinates deployableArtifactCoordinates);
 
   /**
    * Retrieves the POM file from the deployable project's folder.
@@ -195,10 +175,11 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
         .build();
   }
 
-  private ArtifactCoordinates getDeployableProjectArtifactCoordinates(Model pomModel) {
+  private ArtifactCoordinates getDeployableProjectArtifactCoordinates(MavenParser parser) {
     ApplicationGAVModel deployableGAVModel =
-        new ApplicationGAVModel(pomModel.getGroupId(), pomModel.getArtifactId(), pomModel.getVersion());
-    return getDeployableArtifactCoordinates(pomModel, deployableGAVModel);
+        new ApplicationGAVModel(parser.getModel().getGroupId(), parser.getModel().getArtifactId(),
+                                parser.getModel().getVersion());
+    return getDeployableArtifactCoordinates(parser, deployableGAVModel);
   }
 
   /**
@@ -209,7 +190,7 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
    * @param pomModel       parsed POM model.
    * @param activeProfiles active Maven profiles.
    */
-  private void resolveDeployableDependencies(MavenClient mavenClient, File pom, Model pomModel,
+  private void resolveDeployableDependencies(MavenClient mavenClient, File pom, MavenParser parser,
                                              List<String> activeProfiles) {
     DeployableDependencyResolver deployableDependencyResolver = new DeployableDependencyResolver(mavenClient);
 
@@ -225,7 +206,7 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
     List<Artifact> deployableArtifactDependencies =
         updateArtifactsSharedState(deployableMavenBundleDependencies,
                                    updatePackagesResources(toApplicationModelArtifacts(deployableMavenBundleDependencies)),
-                                   pomModel, activeProfiles);
+                                   parser, activeProfiles);
 
     // Prepare bundle dependencies as expected by the project model
     deployableBundleDependencies =
@@ -261,7 +242,7 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
 
     List<BundleDependency> result = deployableMavenBundleDependencies.stream().map(bundleDependency -> {
       if (MULE_PLUGIN_CLASSIFIER.equals(bundleDependency.getDescriptor().getClassifier().orElse(null))
-          && SYSTEM.equals(bundleDependency.getScope())) {
+          && SYSTEM.equals(bundleDependency.getMavenScope())) {
         try (MuleSystemPluginMavenReactorResolver reactor =
             new MuleSystemPluginMavenReactorResolver(new File(bundleDependency.getBundleUri()), mavenClient)) {
           BundleDependency systemScopeDependency = mavenClient
@@ -289,7 +270,7 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
 
     // Filtering is done this way to preserve the order
     return dependencies.stream().filter(dependency -> {
-      org.mule.maven.client.api.model.BundleDescriptor descriptor = dependency.getDescriptor();
+      org.mule.maven.parser.api.BundleDescriptor descriptor = dependency.getDescriptor();
       String pluginKey =
           descriptor.getGroupId() + ":" + descriptor.getArtifactId() + ":" + descriptor.getVersion()
               + descriptor.getClassifier().map(classifier -> ":" + classifier).orElse("");
@@ -302,7 +283,7 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
 
   private List<BundleDependency> collectTransitivePluginDependencies(BundleDependency rootDependency) {
     List<BundleDependency> allTransitivePluginDependencies = new ArrayList<>();
-    for (BundleDependency transitiveDependency : rootDependency.getTransitiveDependencies()) {
+    for (BundleDependency transitiveDependency : rootDependency.getMavenTransitiveDependencies()) {
       if (transitiveDependency.getDescriptor().getClassifier().map(MULE_PLUGIN_CLASSIFIER::equals).orElse(false)) {
         allTransitivePluginDependencies.add(transitiveDependency);
         allTransitivePluginDependencies.addAll(collectTransitivePluginDependencies(transitiveDependency));
@@ -312,76 +293,14 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
     return allTransitivePluginDependencies;
   }
 
-  private static class MuleSystemPluginMavenReactorResolver implements MavenReactorResolver, AutoCloseable {
-
-    private static final String POM = "pom";
-
-    private final File temporaryFolder;
-
-    private final Model effectiveModel;
-
-    private final File pomFile;
-    private final File artifactFile;
-
-    public MuleSystemPluginMavenReactorResolver(File artifactFile, MavenClient mavenClient) {
-      try {
-        temporaryFolder = createTempDirectory("tmpDirPrefix" + random()).toFile();
-      } catch (IOException e) {
-        throw new MuleRuntimeException(e);
-      }
-
-      this.effectiveModel = mavenClient.getEffectiveModel(artifactFile, of(temporaryFolder));
-
-      this.pomFile = effectiveModel.getPomFile();
-      this.artifactFile = artifactFile;
-    }
-
-    @Override
-    public File findArtifact(org.mule.maven.client.api.model.BundleDescriptor bundleDescriptor) {
-      if (checkArtifact(bundleDescriptor)) {
-        if (bundleDescriptor.getType().equals(POM)) {
-          return pomFile;
-        } else {
-          return artifactFile;
-        }
-      }
-      return null;
-    }
-
-    @Override
-    public List<String> findVersions(org.mule.maven.client.api.model.BundleDescriptor bundleDescriptor) {
-      if (checkArtifact(bundleDescriptor)) {
-        return singletonList(this.effectiveModel.getVersion());
-      }
-      return emptyList();
-    }
-
-    private boolean checkArtifact(org.mule.maven.client.api.model.BundleDescriptor bundleDescriptor) {
-      return this.effectiveModel.getGroupId().equals(bundleDescriptor.getGroupId())
-          && this.effectiveModel.getArtifactId().equals(bundleDescriptor.getArtifactId())
-          && this.effectiveModel.getVersion().equals(bundleDescriptor.getVersion());
-    }
-
-    @Override
-    public void close() {
-      deleteQuietly(temporaryFolder);
-    }
-
-  }
-
-  private void resolveAdditionalPluginDependencies(MavenClient mavenClient, Model pomModel,
+  private void resolveAdditionalPluginDependencies(MavenClient mavenClient, MavenParser parser,
                                                    List<String> activeProfiles,
                                                    Map<ArtifactCoordinates, List<Artifact>> pluginsDependencies) {
     // Parse additional plugin dependencies
-    List<org.mule.runtime.module.artifact.activation.internal.plugin.Plugin> initialAdditionalPluginDependencies =
-        findArtifactPackagerPlugin(pomModel, activeProfiles)
-            .map(this::getAdditionalPluginDependencies).orElse(emptyList());
+    List<MavenPlugin> initialAdditionalPluginDependencies = parser.getPomAdditionalPluginDependencies();
 
     AdditionalPluginDependenciesResolver additionalPluginDependenciesResolver =
-        new AdditionalPluginDependenciesResolver(mavenClient,
-                                                 initialAdditionalPluginDependencies,
-                                                 new File("temp"),
-                                                 getPomModels());
+        getAdditionalPluginDependenciesResolver(mavenClient, initialAdditionalPluginDependencies);
 
     additionalPluginDependencies = toPluginDependencies(additionalPluginDependenciesResolver
         .resolveDependencies(deployableMavenBundleDependencies, pluginsDependencies));
@@ -395,8 +314,11 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
    *
    * @return a {@link Map} with {@link ArtifactCoordinates} as key and a {@link Supplier} of {@link Model} as value.
    */
-  protected Map<ArtifactCoordinates, Supplier<Model>> getPomModels() {
-    return emptyMap();
+  protected AdditionalPluginDependenciesResolver getAdditionalPluginDependenciesResolver(MavenClient mavenClient,
+                                                                                         List<MavenPlugin> initialAdditionalPluginDependencies) {
+    return new AdditionalPluginDependenciesResolver(mavenClient,
+                                                    initialAdditionalPluginDependencies,
+                                                    new File("temp"));
   }
 
   private void resolveDeployablePluginsData(List<BundleDependency> deployableMavenBundleDependencies) {
@@ -473,93 +395,4 @@ public abstract class AbstractMavenDeployableProjectModelBuilder extends Abstrac
     return uri -> new File(deployableArtifactRepositoryFolder, uri.toString()).toURI();
   }
 
-  private Optional<org.apache.maven.model.Plugin> findArtifactPackagerPlugin(Model model, List<String> activeProfiles) {
-    Stream<org.apache.maven.model.Plugin> basePlugin = Stream.empty();
-    Build build = model.getBuild();
-    if (build != null) {
-      basePlugin = findArtifactPackagerPlugin(build.getPlugins()).map(Stream::of).orElse(Stream.empty());
-    }
-
-    // Sort them so the processing is consistent with how Maven calculates the plugin configuration for the effective pom.
-    final List<String> sortedActiveProfiles = activeProfiles
-        .stream()
-        .sorted(String::compareTo)
-        .collect(toList());
-
-    final Stream<org.apache.maven.model.Plugin> packagerConfigsForActivePluginsStream = model.getProfiles().stream()
-        .filter(profile -> sortedActiveProfiles.contains(profile.getId()))
-        .map(profile -> findArtifactPackagerPlugin(profile.getBuild() != null ? profile.getBuild().getPlugins() : null))
-        .filter(plugin -> !plugin.equals(empty()))
-        .map(Optional::get);
-
-    return concat(basePlugin, packagerConfigsForActivePluginsStream)
-        .reduce((p1, p2) -> {
-          p1.setConfiguration(mergeXpp3Dom((Xpp3Dom) p2.getConfiguration(), (Xpp3Dom) p1.getConfiguration()));
-          p1.getDependencies().addAll(p2.getDependencies());
-
-          return p1;
-        });
-  }
-
-  private Optional<org.apache.maven.model.Plugin> findArtifactPackagerPlugin(List<org.apache.maven.model.Plugin> plugins) {
-    if (plugins != null) {
-      return plugins.stream().filter(plugin -> (plugin.getArtifactId().equals(MULE_MAVEN_PLUGIN_ARTIFACT_ID)
-          && plugin.getGroupId().equals(MULE_MAVEN_PLUGIN_GROUP_ID)) ||
-          (plugin.getArtifactId().equals(MULE_EXTENSIONS_PLUGIN_ARTIFACT_ID) &&
-              plugin.getGroupId().equals(MULE_EXTENSIONS_PLUGIN_GROUP_ID)))
-          .findFirst();
-    } else {
-      return empty();
-    }
-  }
-
-  private List<org.mule.runtime.module.artifact.activation.internal.plugin.Plugin> getAdditionalPluginDependencies(org.apache.maven.model.Plugin packagingPlugin) {
-    List<org.mule.runtime.module.artifact.activation.internal.plugin.Plugin> pluginsAdditionalLibraries = new ArrayList<>();
-    Object configuration = packagingPlugin.getConfiguration();
-    if (configuration != null) {
-      Xpp3Dom additionalPluginDependenciesDom = ((Xpp3Dom) configuration).getChild(ADDITIONAL_PLUGIN_DEPENDENCIES_FIELD);
-      if (additionalPluginDependenciesDom != null) {
-        Xpp3Dom[] pluginsDom = additionalPluginDependenciesDom.getChildren(PLUGIN_FIELD);
-        if (pluginsDom != null) {
-          for (Xpp3Dom pluginDom : pluginsDom) {
-            String pluginGroupId = getChildParameterValue(pluginDom, GROUP_ID, true);
-            String pluginArtifactId = getChildParameterValue(pluginDom, ARTIFACT_ID, true);
-            List<Dependency> additionalDependencyDependencies = new ArrayList<>();
-            Xpp3Dom dependenciesDom = pluginDom.getChild(PLUGIN_DEPENDENCIES_FIELD);
-            if (dependenciesDom != null) {
-              for (Xpp3Dom dependencyDom : dependenciesDom.getChildren(PLUGIN_DEPENDENCY_FIELD)) {
-                Dependency dependency = new Dependency();
-                dependency.setGroupId(getChildParameterValue(dependencyDom, GROUP_ID, true));
-                dependency
-                    .setArtifactId(getChildParameterValue(dependencyDom, ARTIFACT_ID, true));
-                dependency.setVersion(getChildParameterValue(dependencyDom, VERSION, true));
-                String type = getChildParameterValue(dependencyDom, "type", false);
-                dependency.setType(type == null ? DEFAULT_ARTIFACT_TYPE : type);
-                dependency.setClassifier(getChildParameterValue(dependencyDom, "classifier", false));
-                dependency.setSystemPath(getChildParameterValue(dependencyDom, "systemPath", false));
-
-                additionalDependencyDependencies.add(dependency);
-              }
-            }
-            org.mule.runtime.module.artifact.activation.internal.plugin.Plugin plugin =
-                new org.mule.runtime.module.artifact.activation.internal.plugin.Plugin();
-            plugin.setGroupId(pluginGroupId);
-            plugin.setArtifactId(pluginArtifactId);
-            plugin.setAdditionalDependencies(additionalDependencyDependencies);
-            pluginsAdditionalLibraries.add(plugin);
-          }
-        }
-      }
-    }
-    return pluginsAdditionalLibraries;
-  }
-
-  private String getChildParameterValue(Xpp3Dom element, String childName, boolean validate) {
-    Xpp3Dom child = element.getChild(childName);
-    String childValue = child != null ? child.getValue() : null;
-    if (StringUtils.isEmpty(childValue) && validate) {
-      throw new IllegalArgumentException("Expecting child element with not null value " + childName);
-    }
-    return childValue;
-  }
 }

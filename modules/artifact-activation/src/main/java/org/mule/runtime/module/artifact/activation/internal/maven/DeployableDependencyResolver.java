@@ -11,8 +11,8 @@ import static java.util.stream.Collectors.toList;
 
 import org.mule.maven.client.api.MavenClient;
 import org.mule.maven.client.api.MavenReactorResolver;
-import org.mule.maven.client.api.model.BundleDependency;
-import org.mule.maven.client.api.model.BundleScope;
+import org.mule.maven.parser.api.BundleDependency;
+import org.mule.maven.parser.api.BundleScope;
 
 import java.io.File;
 import java.util.List;
@@ -41,7 +41,7 @@ public class DeployableDependencyResolver {
     return muleMavenPluginClient
         .resolveArtifactDependencies(pomFile, includeTestDependencies, true, empty(), mavenReactorResolver, empty())
         .stream()
-        .filter(d -> !(d.getScope() == BundleScope.PROVIDED)
+        .filter(d -> !(d.getMavenScope() == BundleScope.PROVIDED)
             || d.getDescriptor().getClassifier().map(MULE_DOMAIN_CLASSIFIER::equals).orElse(false))
         .collect(toList());
   }
