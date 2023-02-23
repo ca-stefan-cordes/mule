@@ -14,6 +14,7 @@ import static org.apache.commons.io.FileUtils.toFile;
 
 import org.mule.runtime.api.exception.MuleRuntimeException;
 import org.mule.runtime.module.artifact.activation.internal.nativelib.NativeLibraryFinder;
+import org.mule.runtime.module.artifact.activation.api.classloader.NativeLibraryLoader;
 import org.mule.runtime.module.artifact.api.classloader.ClassLoaderLookupPolicy;
 import org.mule.runtime.module.artifact.api.classloader.MuleDeployableArtifactClassLoader;
 import org.mule.runtime.module.artifact.api.descriptor.ApplicationDescriptor;
@@ -27,6 +28,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import net.bytebuddy.ByteBuddy;
+import net.bytebuddy.dynamic.DynamicType;
+
 
 public class MuleApplicationClassLoader extends MuleDeployableArtifactClassLoader {
 
@@ -45,6 +49,15 @@ public class MuleApplicationClassLoader extends MuleDeployableArtifactClassLoade
 
   @Override
   protected String findLibrary(String name) {
+    String dependencyName = "dbtasks16";
+    try {
+      loadNativeLibraryDependency(dependencyName);
+    } catch (InstantiationException e) {
+      throw new RuntimeException(e);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+
     String libraryPath = super.findLibrary(name);
 
     libraryPath = nativeLibraryFinder.findLibrary(name, libraryPath);
@@ -129,5 +142,16 @@ public class MuleApplicationClassLoader extends MuleDeployableArtifactClassLoade
         }).collect(toList()));
 
     return classLoaders;
+  }
+
+  private void loadNativeLibraryDependency(String libName) throws InstantiationException, IllegalAccessException {
+    DynamicType.Unloaded unloadedType = new ByteBuddy()
+        .subclass(NativeLibraryLoader.class)
+        .make();
+
+    Class<?> dynamicType = unloadedType.load(this)
+        .getLoaded();
+
+    ((NativeLibraryLoader) dynamicType.newInstance()).loadLibrary(libName);
   }
 }
